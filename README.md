@@ -1,18 +1,9 @@
 # StackOverflowStudy
-test commit on new mac
-**How to generate your ssh key**
-
-This method is very important. You will obtain a pair of public and private key. These keys are essential to access to the remote server via ssh.
-1. Go to terminal
-2. Type `ssh-keygen`. Then, you will be prompted to locate where your public and private keys will be stored. The default location is Users/YOURHOME/.ssh/. If you want to change it, you can do it at this step.
-3. You will be asked to put paraphrase. You can leave it blank, or type whatever you want.
-4. Then, you will get a pair of public and private keys. The `id-rsa` is your private key and `id-rsa.pub` is your public key.
-5. You *must* provide your public key to the person in charge of the remote server. So, they can authorize you for the access to the remote server.
-
-**How to access to the remote server via ssh**
-1. Go to Terminal
-2. Using command `ssh -i private-key 34.87.136.79` where the private key is provided privately. For example `ssh -i /Desktop/my-private-key 34.87.136.79`.
-3. Once you're in the server, you're good to go!
+**How to access to the remote server via ssh browser on GCP**
+1. Go to GCP console, and login with jarvan-experiment Google account.
+2. On the left panel, select `Virtual machines` in the sub menu, select `VM instances`.
+3. You will see `jarvan-exp-1` machine. On the connect column select the drop down arrow and select `Open in browser window`
+4. There you go, you will have the access to the remote server.
 
 **How to use MySQL server on the remote server**
 1. On the remote server, use command `mysql -u root -p`.
@@ -23,3 +14,10 @@ This method is very important. You will obtain a pair of public and private key.
 6. You may use SQL command to query for data such as `select`, `insert`, `delete` etc.
 
 **How to compile and run Java program on the remote server**
+1. On the remote server, the Java program is located in `/StackOverflowStudy/SOTOrrentAnalyzer/`. You may run this command `cd StackOverflowStudy/SOTOrrentAnalyzer/` to change directory to here.
+2. There will be several java files, but there is only one with the main class for running which is `PostBlockProcessor.java`.
+3. Run the following command to compile the java program `javac PostBlockProcessor.java`.
+4. Run the following command to execute the java program `java PostBlockProcessor`.
+5. In the `PostBlockProcessor.java` file, in line 84-95 are the options where you may select the program to do. There are 4 options currently. You may find what they can do in the file.
+
+Remark: Sometimes, you may encounter error while compiling the Java program. The error is that the compiler cannot find .jar for SQL. Please run this command `export CLASSPATH=$CLASSPATH:/usr/share/java/mysql-connector-java.jar` to bypass the error.
