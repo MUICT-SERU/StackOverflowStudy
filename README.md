@@ -1,7 +1,7 @@
 # StackOverflowStudy
 **How to access to the remote server via ssh browser on GCP**
 1. Go to GCP console, and login with jarvan-experiment Google account.
-2. On the left panel, select `Virtual machines` in the sub menu, select `VM instances`.
+2. On the navigation panel on the left side, select `Compute Engine` under `VIRTUAL MACHINES` menu, select `VM instances`.
 3. You will see `jarvan-exp-1` machine. On the connect column select the drop down arrow and select `Open in browser window`
 4. There you go, you will have the access to the remote server.
 
