@@ -79,6 +79,7 @@ public class PostBlockProcessor {
                     System.out.println(count+" queries has been processed. There are "+(countLine-count)+" queries left.");
                 }
             }
+            System.out.println("Finished importing the data.");
 
             //Write Post objects with PostHistory+PostBlock in to text file
             // writeOutTextFile(posts);
@@ -87,7 +88,10 @@ public class PostBlockProcessor {
             // calculatePostChanges(posts);
 
             //Calculate for Min, Max, Avg of similarity of each post
-            calculateSimilarity(posts, statement3);
+            // calculateSimilarity(posts, statement3);
+
+            //Write out Diff files of each post in each postHistory
+            writeDiffFiles(posts, statement3);
 
             bufferedReader.close();
             fileReader.close();
@@ -101,6 +105,7 @@ public class PostBlockProcessor {
     }
 
     private static void writeOutTextFile(ArrayList<Post> posts) {
+        System.out.println("Start writing out text file...");
         String fileName = "postsWithPostHistoryVersion.txt";
         String directory = "/home/Dreamteam/";
         try{
@@ -119,6 +124,7 @@ public class PostBlockProcessor {
     }
 
     private static void calculatePostChanges(ArrayList<Post> posts) {
+        System.out.println("Start calculating Post changes...");
         //variables for counting
         int codeChanges = 0;
         int textChanges = 0;
@@ -173,6 +179,7 @@ public class PostBlockProcessor {
     }
 
     private static void calculateSimilarity(ArrayList<Post> posts, Statement statement) {
+        System.out.println("Start calculating for similarity...");
         String fileName = "similarity.csv";
         String directory = "/home/Dreamteam/";
         try {
@@ -191,22 +198,11 @@ public class PostBlockProcessor {
                         int currentPostHistoryId = 0;
                         int precedingPostBlockId = postBlock.getPostBlockId();
                         int precedingPostHistoryId = postHistory.getPostHistoryId();
-                        //test
-                        int runningBlockNumber = 1;
                         do{
                             currentPostBlockId = precedingPostBlockId;
                             currentPostHistoryId = precedingPostHistoryId;
                             if(!doneSet.contains(currentPostBlockId)){
                                 thisSim.add(post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingSimilarity());
-
-                                // String query = "select * from PostBlockDiff where PostBlockVersionId = "+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+";";
-                                // System.out.println(query);
-                                // ResultSet resultSet = statement.executeQuery(query);
-                                
-                                // if(resultSet.next()){
-                                //     System.out.println("Operation is "+resultSet.getString("PostBlockDiffOperationId"));
-                                // }
-                                
                                 doneSet.add(currentPostBlockId);
                             }
                             precedingPostBlockId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
@@ -252,8 +248,75 @@ public class PostBlockProcessor {
         catch (IOException e) {
             e.printStackTrace();
         }
-        // catch (SQLException throwables) {
-        //     throwables.printStackTrace();
-        // } 
+    }
+
+    private static void writeDiffFiles(ArrayList<Post> posts, Statement statement) {
+        System.out.println("Start writing diff files...");
+        String directory = "/home/Dreamteam/Diff/";
+        try {
+            for(Post post : posts) {
+                Set<Integer> doneSet = new HashSet<Integer>();
+                int runningBlockNumber = 1;
+                for(int i = 0; i < post.getPostHistoriesSize(); i++) {
+                    PostHistory postHistory = post.getPostHistories().get(i);
+                    int previousPostHistoryId = postHistory.getPreviousPostHistoryId();
+                    for(int y = 0; y < postHistory.getPostBlocks().size(); y++){
+                        PostBlock postBlock = postHistory.getPostBlocks().get(y);
+                        ArrayList<Double> thisSim = new ArrayList<Double>();
+                        int currentPostBlockId = 0;
+                        int currentPostHistoryId = 0;
+                        int precedingPostBlockId = postBlock.getPostBlockId();
+                        int precedingPostHistoryId = postHistory.getPostHistoryId();
+                        do{
+                            currentPostBlockId = precedingPostBlockId;
+                            currentPostHistoryId = precedingPostHistoryId;
+                            if(!doneSet.contains(currentPostBlockId)){
+                                String query = "select count(*) as num from PostBlockDiff where PostBlockVersionId = "+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+";";
+                                ResultSet resultSet = statement.executeQuery(query);
+                                resultSet.next();
+                                if(resultSet.getInt("num") > 0) {
+                                    int isCodeBlock = 0;
+                                    if(post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).isCodeBlock()) {
+                                        isCodeBlock = 1;
+                                    }
+                                    // File file = new File(directory+post.getPostId()+"/"+post.getPostId()+"-"+runningBlockNumber+"-"+isCodeBlock+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+".txt");
+                                    File file = new File(directory+post.getPostId()+"/"+post.getPostId()+"-"+post.getPostHistory(currentPostHistoryId).getPostHistoryId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getLocalId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId()+"-"+isCodeBlock+".txt");
+                                    file.getParentFile().mkdirs();
+                                    FileWriter fileWriter = new FileWriter(file);
+                                    BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+                                    StringBuilder theFile = new StringBuilder();
+                                    query = "select * from PostBlockDiff where PostBlockVersionId = "+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+";";
+                                    resultSet = statement.executeQuery(query);
+                                    while(resultSet.next()){
+                                        String[] stringSet = resultSet.getString("Text").split("\n");
+                                        int operation = resultSet.getInt("PostBlockDiffOperationId");
+                                        for(String s : stringSet) {
+                                            if(operation == 0) theFile.append("   ");
+                                            else if(operation == 1) theFile.append(" - ");
+                                            else if(operation == -1) theFile.append(" + ");
+                                            theFile.append(s+"\n");
+                                        }
+                                    }
+                                    bufferedWriter.write(theFile.toString());
+                                    bufferedWriter.close();
+                                    fileWriter.close();
+                                    runningBlockNumber++;
+                                }
+                                doneSet.add(currentPostBlockId);
+                            }
+                            precedingPostBlockId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
+                            precedingPostHistoryId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostHistoryId();
+                        } while (precedingPostBlockId != 0);
+                    }   
+                }
+            }
+            System.out.println("The program is done! Check the files at: "+directory);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        catch (SQLException throwables) {
+            throwables.printStackTrace();
+        } 
     }
 }
