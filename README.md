@@ -20,4 +20,7 @@
 4. Run the following command to execute the java program `java PostBlockProcessor`.
 5. In the `PostBlockProcessor.java` file, in line 84-95 are the options where you may select the program to do. There are 4 options currently. You may find what they can do in the file.
 
+**Diff File Naming Convention**
+For diff files, there is a pattarn of file naming which is `PostId-PostHistoryId-LocalId-CurrentPostBlockId-PreviousPostBlockId-PostBlockTypeId.txt` where `PostBlockTypeId` can be either 0 or 1, 0 is Text block and 1 is Code block.
+
 Remark: Sometimes, you may encounter error while compiling the Java program. The error is that the compiler cannot find .jar for SQL. Please run this command `export CLASSPATH=$CLASSPATH:/usr/share/java/mysql-connector-java.jar` to bypass the error.
