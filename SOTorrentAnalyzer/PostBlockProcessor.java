@@ -11,11 +11,11 @@ public class PostBlockProcessor {
         try{
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
-            FileReader fileReader = new FileReader("/home/Dreamteam/acceptedWithVersionAnswer.txt");
-            // FileReader fileReader = new FileReader("/home/Dreamteam/acceptedWithVersionAnswer2.txt"); //To Test with small file
+            FileReader fileReader = new FileReader("/home/jarvan_experiment/acceptedWithVersionAnswer.txt");
+            // FileReader fileReader = new FileReader("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             BufferedReader bufferedReader = new BufferedReader(fileReader);
-            Path path = Paths.get("/home/Dreamteam/acceptedWithVersionAnswer.txt");
-            // Path path = Paths.get("/home/Dreamteam/acceptedWithVersionAnswer2.txt"); //To Test with small file
+            Path path = Paths.get("/home/jarvan_experiment/acceptedWithVersionAnswer.txt");
+            // Path path = Paths.get("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             long countLine = Files.lines(path).count();
             String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
             String username = "root";
@@ -107,7 +107,7 @@ public class PostBlockProcessor {
     private static void writeOutTextFile(ArrayList<Post> posts) {
         System.out.println("Start writing out text file...");
         String fileName = "postsWithPostHistoryVersion.txt";
-        String directory = "/home/Dreamteam/";
+        String directory = "/home/jarvan_experiment/";
         try{
             FileWriter fileWriter = new FileWriter(directory+fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
@@ -181,7 +181,7 @@ public class PostBlockProcessor {
     private static void calculateSimilarity(ArrayList<Post> posts, Statement statement) {
         System.out.println("Start calculating for similarity...");
         String fileName = "similarity.csv";
-        String directory = "/home/Dreamteam/";
+        String directory = "/home/jarvan_experiment/";
         try {
             FileWriter fileWriter = new FileWriter(directory+fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
@@ -252,7 +252,7 @@ public class PostBlockProcessor {
 
     private static void writeDiffFiles(ArrayList<Post> posts, Statement statement) {
         System.out.println("Start writing diff files...");
-        String directory = "/home/Dreamteam/Diff/";
+        String directory = "/home/jarvan_experiment/Diff/";
         try {
             for(Post post : posts) {
                 Set<Integer> doneSet = new HashSet<Integer>();
