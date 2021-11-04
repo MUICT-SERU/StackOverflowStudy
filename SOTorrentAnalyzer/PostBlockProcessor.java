@@ -8,18 +8,27 @@ import java.util.*;
 
 public class PostBlockProcessor {
     public static void main(String[] args) {
+	String answerFilePath = "/mnt/disks/data/so_study/StackOverflowStudy/files/acceptedWithVersionAnswer.txt";
         try{
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
-            FileReader fileReader = new FileReader("/home/jarvan_experiment/acceptedWithVersionAnswer.txt");
+            FileReader fileReader = new FileReader(answerFilePath);
             // FileReader fileReader = new FileReader("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             BufferedReader bufferedReader = new BufferedReader(fileReader);
-            Path path = Paths.get("/home/jarvan_experiment/acceptedWithVersionAnswer.txt");
+            Path path = Paths.get(answerFilePath);
             // Path path = Paths.get("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             long countLine = Files.lines(path).count();
             String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
-            String username = "root";
-            String password = "1234";
+            String username = "sotorrent";
+            String password = "stackoverflow";
+            try {
+            // The newInstance() call is a work around for some
+            // broken Java implementations
+                Class.forName("com.mysql.jdbc.Driver").newInstance();
+            } catch (Exception ex) {
+            	// handle the error
+                ex.printStackTrace();
+            }
             Connection connection = DriverManager.getConnection(dbUrl, username, password);
             Statement statement = connection.createStatement();
             Statement statement2 = connection.createStatement();
@@ -88,10 +97,10 @@ public class PostBlockProcessor {
             // calculatePostChanges(posts);
 
             //Calculate for Min, Max, Avg of similarity of each post
-            // calculateSimilarity(posts, statement3);
+            calculateSimilarity(posts, statement3);
 
             //Write out Diff files of each post in each postHistory
-            writeDiffFiles(posts, statement3);
+            //writeDiffFiles(posts, statement3);
 
             bufferedReader.close();
             fileReader.close();
