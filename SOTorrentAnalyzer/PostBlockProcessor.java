@@ -7,8 +7,9 @@ import java.util.*;
 
 
 public class PostBlockProcessor {
+    public static String home = "/mnt/disks/data/so_study/StackOverflowStudy/";
     public static void main(String[] args) {
-	String answerFilePath = "/mnt/disks/data/so_study/StackOverflowStudy/files/acceptedWithVersionAnswer.txt";
+	String answerFilePath = home + "files/acceptedWithVersionAnswer.txt";
         try{
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
@@ -116,7 +117,7 @@ public class PostBlockProcessor {
     private static void writeOutTextFile(ArrayList<Post> posts) {
         System.out.println("Start writing out text file...");
         String fileName = "postsWithPostHistoryVersion.txt";
-        String directory = "/home/jarvan_experiment/";
+        String directory = PostBlockProcessor.home;
         try{
             FileWriter fileWriter = new FileWriter(directory+fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
@@ -190,7 +191,7 @@ public class PostBlockProcessor {
     private static void calculateSimilarity(ArrayList<Post> posts, Statement statement) {
         System.out.println("Start calculating for similarity...");
         String fileName = "similarity.csv";
-        String directory = "/home/jarvan_experiment/";
+        String directory = PostBlockProcessor.home;
         try {
             FileWriter fileWriter = new FileWriter(directory+fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
@@ -261,7 +262,7 @@ public class PostBlockProcessor {
 
     private static void writeDiffFiles(ArrayList<Post> posts, Statement statement) {
         System.out.println("Start writing diff files...");
-        String directory = "/home/jarvan_experiment/Diff/";
+        String directory = PostBlockProcessor.home + "diff/";
         try {
             for(Post post : posts) {
                 Set<Integer> doneSet = new HashSet<Integer>();
