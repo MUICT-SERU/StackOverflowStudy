@@ -16,7 +16,7 @@
 **How to compile and run Java program on the remote server**
 1. On the remote server, the Java program is located in `/StackOverflowStudy/SOTOrrentAnalyzer/`. You may run this command `cd StackOverflowStudy/SOTOrrentAnalyzer/` to change directory to here.
 2. There will be several java files, but there is only one with the main class for running which is `PostBlockProcessor.java`.
-3. Run the following command to compile the java program `javac PostBlockProcessor.java`.
+3. Run the following command to compile the java program `javac PostBlockProcessor.java`. You may need to change the location of the SO answer file in the code.
 4. Run the following command to execute the java program `java PostBlockProcessor`.
 5. In the `PostBlockProcessor.java` file, in line 84-95 are the options where you may select the program to do. There are 4 options currently. You may find what they can do in the file.
 
