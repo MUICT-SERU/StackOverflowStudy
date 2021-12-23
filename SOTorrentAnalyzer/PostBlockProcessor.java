@@ -36,13 +36,12 @@ public class PostBlockProcessor {
             Statement statement3 = connection.createStatement();
             System.out.println("Connected to the database successfully!\nBeginning querying process...\nThe number of queries initiated: "+countLine);
             
-            //Processing Post by creating Post objects
+            // Processing Post by creating Post objects
             long count = 0;
             String s;
             ArrayList<Post> posts = new ArrayList<Post>();
             while((s = bufferedReader.readLine()) != null){    
                 String query = "select PostHistoryId, MostRecentVersion from PostBlockVersion where PostId = "+s+" group by PostHistoryId, MostRecentVersion order by PostHistoryId desc;";
-                // String query = "select PostHistoryId, MostRecentVersion from PostBlockVersion where PostId = 43807 group by PostHistoryId, MostRecentVersion order by PostHistoryId desc;";
                 ResultSet resultSet = statement.executeQuery(query);
                 Post post = new Post(Integer.parseInt(s));
                 while(resultSet.next()){
@@ -289,7 +288,6 @@ public class PostBlockProcessor {
                                     if(post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).isCodeBlock()) {
                                         isCodeBlock = 1;
                                     }
-                                    // File file = new File(directory+post.getPostId()+"/"+post.getPostId()+"-"+runningBlockNumber+"-"+isCodeBlock+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+".txt");
                                     File file = new File(directory+post.getPostId()+"/"+post.getPostId()+"-"+post.getPostHistory(currentPostHistoryId).getPostHistoryId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getLocalId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId()+"-"+post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId()+"-"+isCodeBlock+".txt");
                                     file.getParentFile().mkdirs();
                                     FileWriter fileWriter = new FileWriter(file);
