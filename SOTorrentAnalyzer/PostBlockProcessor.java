@@ -12,6 +12,7 @@ public class PostBlockProcessor {
     private static String home = "/mnt/disks/data/so_study/StackOverflowStudy/";
     private static double minSimilarity = 0.8;
     private static double maxSimilarity = 0.9;
+    private static double minDiffDays = 1;
 
     public static void main(String[] args) {
         String answerFilePath = home + "files/acceptedWithVersionAnswer_1000.txt";
@@ -230,6 +231,7 @@ public class PostBlockProcessor {
                                 if (thisSim.get(x).doubleValue() > max) max = thisSim.get(x).doubleValue();
                                 avg = avg + thisSim.get(x).doubleValue();
                             }
+                            // write the value out only when it is within the selected similarity range
                             if (avg >= minSimilarity && avg <= maxSimilarity) {
                                 System.out.println("The avg. similarity value is in the range: " + avg);
                                 System.out.println("Checking the post modification duration ...");
@@ -237,8 +239,7 @@ public class PostBlockProcessor {
                                 String username = "sotorrent";
                                 String password = "stackoverflow";
                                 try {
-                                    // The newInstance() call is a work around for some
-                                    // broken Java implementations
+                                    // The newInstance() call is a workaround for some broken Java implementations
                                     Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
                                 } catch (Exception ex) {
                                     // handle the error
@@ -267,32 +268,35 @@ public class PostBlockProcessor {
                                         }
                                     }
                                     double avgDiffDays = diffSum / (count * 86400000);
-                                    System.out.println("The average post modification duration is: " + avgDiffDays);
-                                    // write the value out only when it is within the selected similarity range
-                                    if (avg != 0.0) {
-                                        PostBlockStat postBlockStat;
-                                        if (postBlock.isCodeBlock()) {
-                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                    1, thisSim.size() - 1,
-                                                    min, max, (avg / (thisSim.size() - 1)));
+                                    System.out.println("The average post modification duration is: " + avgDiffDays + " days");
+                                    // write the posts where the average post modification duration is more than the
+                                    // specified minimum number of days.
+                                    if (avgDiffDays >= minDiffDays) {
+                                        if (avg != 0.0) {
+                                            PostBlockStat postBlockStat;
+                                            if (postBlock.isCodeBlock()) {
+                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                        1, thisSim.size() - 1,
+                                                        min, max, (avg / (thisSim.size() - 1)));
+                                            } else {
+                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                        0, thisSim.size() - 1,
+                                                        min, max, (avg / (thisSim.size() - 1)));
+                                            }
+                                            bufferedWriter.write(postBlockStat.toCSV());
                                         } else {
-                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                    0, thisSim.size() - 1,
-                                                    min, max, (avg / (thisSim.size() - 1)));
+                                            PostBlockStat postBlockStat;
+                                            if (postBlock.isCodeBlock()) {
+                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                        1, 0, 0, 0, 0);
+                                            } else {
+                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                        0, 0, 0, 0, 0);
+                                            }
+                                            bufferedWriter.write(postBlockStat.toCSV());
                                         }
-                                        bufferedWriter.write(postBlockStat.toCSV());
-                                    } else {
-                                        PostBlockStat postBlockStat;
-                                        if (postBlock.isCodeBlock()) {
-                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                    1, 0, 0, 0, 0);
-                                        } else {
-                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                    0, 0, 0, 0, 0);
-                                        }
-                                        bufferedWriter.write(postBlockStat.toCSV());
+                                        connection.close();
                                     }
-				    connection.close();
                                 } catch (SQLException e) {
                                     e.printStackTrace();
                                 }
