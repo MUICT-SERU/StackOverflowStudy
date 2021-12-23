@@ -228,30 +228,32 @@ public class PostBlockProcessor {
                                 if (thisSim.get(x).doubleValue() > max) max = thisSim.get(x).doubleValue();
                                 avg = avg + thisSim.get(x).doubleValue();
                             }
-                            // write the value out only when it is within the selected similarity range
-                            if (avg != 0.0 && (avg >= minSimilarity) && (avg <= maxSimilarity)) {
+                            if (avg >= minSimilarity && avg <= maxSimilarity) {
                                 System.out.println("The avg. similarity value is in the range: " + avg);
-                                PostBlockStat postBlockStat;
-                                if (postBlock.isCodeBlock()) {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                            1, thisSim.size() - 1,
-                                            min, max, (avg / (thisSim.size() - 1)));
+                                // write the value out only when it is within the selected similarity range
+                                if (avg != 0.0) {
+                                    PostBlockStat postBlockStat;
+                                    if (postBlock.isCodeBlock()) {
+                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                1, thisSim.size() - 1,
+                                                min, max, (avg / (thisSim.size() - 1)));
+                                    } else {
+                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                0, thisSim.size() - 1,
+                                                min, max, (avg / (thisSim.size() - 1)));
+                                    }
+                                    bufferedWriter.write(postBlockStat.toCSV());
                                 } else {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                            0, thisSim.size() - 1,
-                                            min, max, (avg / (thisSim.size() - 1)));
+                                    PostBlockStat postBlockStat;
+                                    if (postBlock.isCodeBlock()) {
+                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                1, 0, 0, 0, 0);
+                                    } else {
+                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                0, 0, 0, 0, 0);
+                                    }
+                                    bufferedWriter.write(postBlockStat.toCSV());
                                 }
-                                bufferedWriter.write(postBlockStat.toCSV());
-                            } else {
-                                PostBlockStat postBlockStat;
-                                if (postBlock.isCodeBlock()) {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                            1, 0, 0, 0, 0);
-                                } else {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                            0, 0, 0, 0, 0);
-                                }
-                                bufferedWriter.write(postBlockStat.toCSV());
                             }
                         }
                     }
