@@ -194,9 +194,17 @@ public class PostBlockProcessor {
         String fileName = "similarity.csv";
         String directory = PostBlockProcessor.home;
         try {
+            String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
+            String username = "sotorrent";
+            String password = "stackoverflow";
+            // The newInstance() call is a workaround for some broken Java implementations
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection connection = null;
+            connection = DriverManager.getConnection(dbUrl, username, password);
+            Statement statement = connection.createStatement();
             FileWriter fileWriter = new FileWriter(directory + fileName);
             BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-            bufferedWriter.write("PostId,UniqueId,PostBlockType,Revisions,MinSim,MaxSim,AvgSim\n");
+            bufferedWriter.write("PostId,UniqueId,PostBlockType,Revisions,MinSim,MaxSim,AvgSim,AvgDiffDays\n");
             for (Post post : posts) {
                 Set<Integer> doneSet = new HashSet<Integer>();
                 for (int i = 0; i < post.getPostHistoriesSize(); i++) {
@@ -235,70 +243,53 @@ public class PostBlockProcessor {
                             if (avg >= minSimilarity && avg <= maxSimilarity) {
                                 System.out.println("The avg. similarity value is in the range: " + avg);
                                 System.out.println("Checking the post modification duration ...");
-                                String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
-                                String username = "sotorrent";
-                                String password = "stackoverflow";
-                                try {
-                                    // The newInstance() call is a workaround for some broken Java implementations
-                                    Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
-                                } catch (Exception ex) {
-                                    // handle the error
-                                    ex.printStackTrace();
+
+                                String query = "select creationDate from PostHistory where PostId=" +
+                                        post.getPostId() + ";";
+                                ResultSet resultSet = statement.executeQuery(query);
+                                ArrayList<Date> creationDates = new ArrayList<Date>();
+                                while (resultSet.next()) {
+                                    Date creationDate = resultSet.getDate("creationDate");
+                                    creationDates.add(creationDate);
+                                    System.out.println(creationDate.toString());
                                 }
-                                Connection connection = null;
-                                try {
-                                    connection = DriverManager.getConnection(dbUrl, username, password);
-                                    Statement statement = connection.createStatement();
-                                    String query = "select creationDate from PostHistory where PostId=" +
-                                            post.getPostId() + ";";
-                                    ResultSet resultSet = statement.executeQuery(query);
-                                    ArrayList<Date> creationDates = new ArrayList<Date>();
-                                    while (resultSet.next()) {
-                                        Date creationDate = resultSet.getDate("creationDate");
-                                        creationDates.add(creationDate);
-                                        System.out.println(creationDate.toString());
+                                int count = 0;
+                                long diffSum = 0;
+                                if (creationDates.size() > 1) {
+                                    for (int j = 0; j < creationDates.size() - 1; j++) {
+                                        long diff = creationDates.get(j + 1).getTime() - creationDates.get(j).getTime();
+                                        diffSum += diff;
+                                        count++;
                                     }
-                                    int count = 0;
-                                    long diffSum = 0;
-                                    if (creationDates.size() > 1) {
-                                        for (int j = 0; j < creationDates.size() - 1; j++) {
-                                            long diff = creationDates.get(j + 1).getTime() - creationDates.get(j).getTime();
-                                            diffSum += diff;
-                                            count++;
-                                        }
-                                    }
-                                    double avgDiffDays = diffSum / (count * 86400000);
-                                    System.out.println("The average post modification duration is: " + avgDiffDays + " days");
-                                    // write the posts where the average post modification duration is more than the
-                                    // specified minimum number of days.
-                                    if (avgDiffDays >= minDiffDays) {
-                                        if (avg != 0.0) {
-                                            PostBlockStat postBlockStat;
-                                            if (postBlock.isCodeBlock()) {
-                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        1, thisSim.size() - 1,
-                                                        min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
-                                            } else {
-                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        0, thisSim.size() - 1,
-                                                        min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
-                                            }
-                                            bufferedWriter.write(postBlockStat.toCSV());
+                                }
+                                double avgDiffDays = diffSum / (count * 86400000);
+                                System.out.println("The average post modification duration is: " + avgDiffDays + " days");
+                                // write the posts where the average post modification duration is more than the
+                                // specified minimum number of days.
+                                if (avgDiffDays >= minDiffDays) {
+                                    if (avg != 0.0) {
+                                        PostBlockStat postBlockStat;
+                                        if (postBlock.isCodeBlock()) {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    1, thisSim.size() - 1,
+                                                    min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
                                         } else {
-                                            PostBlockStat postBlockStat;
-                                            if (postBlock.isCodeBlock()) {
-                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        1, 0, 0, 0, 0, avgDiffDays);
-                                            } else {
-                                                postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        0, 0, 0, 0, 0, avgDiffDays);
-                                            }
-                                            bufferedWriter.write(postBlockStat.toCSV());
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    0, thisSim.size() - 1,
+                                                    min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
                                         }
-                                        connection.close();
+                                        bufferedWriter.write(postBlockStat.toCSV());
+                                    } else {
+                                        PostBlockStat postBlockStat;
+                                        if (postBlock.isCodeBlock()) {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    1, 0, 0, 0, 0, avgDiffDays);
+                                        } else {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    0, 0, 0, 0, 0, avgDiffDays);
+                                        }
+                                        bufferedWriter.write(postBlockStat.toCSV());
                                     }
-                                } catch (SQLException e) {
-                                    e.printStackTrace();
                                 }
                             }
                         }
@@ -308,7 +299,12 @@ public class PostBlockProcessor {
             System.out.println("The program is done! Check the file at: " + directory + fileName);
             bufferedWriter.close();
             fileWriter.close();
+            connection.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
