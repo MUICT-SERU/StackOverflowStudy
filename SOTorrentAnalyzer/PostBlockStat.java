@@ -6,8 +6,10 @@ public class PostBlockStat {
     private double minSim;
     private double maxSim;
     private double avgSim;
+    private double avgDiffDays;
 
-    public PostBlockStat(int postId, int uniqueId, int postBlockType, int revisions, double minSim, double maxSim, double avgSim) {
+    public PostBlockStat(int postId, int uniqueId, int postBlockType, int revisions,
+                         double minSim, double maxSim, double avgSim, double avgDiffDays) {
         this.postId = postId;
         this.uniqueId = uniqueId;
         this.postBlockType = postBlockType;
@@ -15,9 +17,11 @@ public class PostBlockStat {
         this.minSim = minSim;
         this.maxSim = maxSim;
         this.avgSim = avgSim;
+        this.avgDiffDays = avgDiffDays;
     }
- 
+
     public String toCSV() {
-        return postId+","+uniqueId+","+postBlockType+","+revisions+","+minSim+","+maxSim+","+avgSim+"\n";
+        return postId + "," + uniqueId + "," + postBlockType + "," + revisions + "," +
+                minSim + "," + maxSim + "," + avgSim + "," + avgDiffDays + "\n";
     }
 }

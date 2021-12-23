@@ -277,21 +277,21 @@ public class PostBlockProcessor {
                                             if (postBlock.isCodeBlock()) {
                                                 postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
                                                         1, thisSim.size() - 1,
-                                                        min, max, (avg / (thisSim.size() - 1)));
+                                                        min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
                                             } else {
                                                 postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
                                                         0, thisSim.size() - 1,
-                                                        min, max, (avg / (thisSim.size() - 1)));
+                                                        min, max, (avg / (thisSim.size() - 1)), avgDiffDays);
                                             }
                                             bufferedWriter.write(postBlockStat.toCSV());
                                         } else {
                                             PostBlockStat postBlockStat;
                                             if (postBlock.isCodeBlock()) {
                                                 postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        1, 0, 0, 0, 0);
+                                                        1, 0, 0, 0, 0, avgDiffDays);
                                             } else {
                                                 postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                        0, 0, 0, 0, 0);
+                                                        0, 0, 0, 0, 0, avgDiffDays);
                                             }
                                             bufferedWriter.write(postBlockStat.toCSV());
                                         }
