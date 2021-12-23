@@ -34,7 +34,6 @@ public class PostBlockProcessor {
             Connection connection = DriverManager.getConnection(dbUrl, username, password);
             Statement statement = connection.createStatement();
             Statement statement2 = connection.createStatement();
-            Statement statement3 = connection.createStatement();
             System.out.println("Connected to the database successfully!\nBeginning querying process..." +
                     "\nThe number of queries initiated: " + countLine);
 
@@ -103,7 +102,7 @@ public class PostBlockProcessor {
             // calculatePostChanges(posts);
 
             //Calculate for Min, Max, Avg of similarity of each post
-            calculateSimilarity(posts, statement3);
+            calculateSimilarity(posts);
 
             //Write out Diff files of each post in each postHistory
             //writeDiffFiles(posts, statement3);
@@ -187,7 +186,7 @@ public class PostBlockProcessor {
         }
     }
 
-    private static void calculateSimilarity(ArrayList<Post> posts, Statement statement) {
+    private static void calculateSimilarity(ArrayList<Post> posts) {
         System.out.println("Start calculating for similarity...");
         String fileName = "similarity.csv";
         String directory = PostBlockProcessor.home;
@@ -231,6 +230,7 @@ public class PostBlockProcessor {
                             }
                             // write the value out only when it is within the selected similarity range
                             if (avg != 0.0 && (avg >= minSimilarity) && (avg <= maxSimilarity)) {
+                                System.out.println("The avg. similarity value is in the range: " + avg);
                                 PostBlockStat postBlockStat;
                                 if (postBlock.isCodeBlock()) {
                                     postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
