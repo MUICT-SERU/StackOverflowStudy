@@ -12,7 +12,7 @@ public class PostBlockProcessor {
     private static double maxSimilarity = 0.9;
 
     public static void main(String[] args) {
-        String answerFilePath = home + "files/acceptedWithVersionAnswer.txt";
+        String answerFilePath = home + "files/acceptedWithVersionAnswer3.txt";
         try {
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
