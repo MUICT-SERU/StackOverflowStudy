@@ -250,10 +250,13 @@ public class PostBlockProcessor {
                                     String query = "select creationDate from PostHistory where PostId=" +
                                             post.getPostId() + ";";
                                     ResultSet resultSet = statement.executeQuery(query);
+				    ArrayList<Date> creationDates = new ArrayList<Date>();
                                     while (resultSet.next()) {
                                         Date creationDate = resultSet.getDate("creationDate");
+					creationDates.add(creationDate);
                                         System.out.println(creationDate.toString());
                                     }
+				
                                     // write the value out only when it is within the selected similarity range
                                     if (avg != 0.0) {
                                         PostBlockStat postBlockStat;
@@ -278,6 +281,7 @@ public class PostBlockProcessor {
                                         }
                                         bufferedWriter.write(postBlockStat.toCSV());
                                     }
+				    connection.close();
                                 } catch (SQLException e) {
                                     e.printStackTrace();
                                 }
