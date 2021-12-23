@@ -15,7 +15,7 @@ public class PostBlockProcessor {
     private static double minDiffDays = 1;
 
     public static void main(String[] args) {
-        String answerFilePath = home + "files/acceptedWithVersionAnswer_1000.txt";
+        String answerFilePath = home + "files/acceptedWithVersionAnswer.txt";
         try {
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
