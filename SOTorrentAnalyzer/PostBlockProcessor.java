@@ -3,6 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.sql.Date;
 import java.util.*;
 
 
@@ -230,29 +231,55 @@ public class PostBlockProcessor {
                             }
                             if (avg >= minSimilarity && avg <= maxSimilarity) {
                                 System.out.println("The avg. similarity value is in the range: " + avg);
-                                // write the value out only when it is within the selected similarity range
-                                if (avg != 0.0) {
-                                    PostBlockStat postBlockStat;
-                                    if (postBlock.isCodeBlock()) {
-                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                1, thisSim.size() - 1,
-                                                min, max, (avg / (thisSim.size() - 1)));
-                                    } else {
-                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                0, thisSim.size() - 1,
-                                                min, max, (avg / (thisSim.size() - 1)));
+                                System.out.println("Checking the post modification duration ...");
+                                String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
+                                String username = "sotorrent";
+                                String password = "stackoverflow";
+                                try {
+                                    // The newInstance() call is a work around for some
+                                    // broken Java implementations
+                                    Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+                                } catch (Exception ex) {
+                                    // handle the error
+                                    ex.printStackTrace();
+                                }
+                                Connection connection = null;
+                                try {
+                                    connection = DriverManager.getConnection(dbUrl, username, password);
+                                    Statement statement = connection.createStatement();
+                                    String query = "select creationDate from PostHistory where PostId=" +
+                                            post.getPostId() + ";";
+                                    ResultSet resultSet = statement.executeQuery(query);
+                                    while (resultSet.next()) {
+                                        Date creationDate = resultSet.getDate("creationDate");
+                                        System.out.println(creationDate.toString());
                                     }
-                                    bufferedWriter.write(postBlockStat.toCSV());
-                                } else {
-                                    PostBlockStat postBlockStat;
-                                    if (postBlock.isCodeBlock()) {
-                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                1, 0, 0, 0, 0);
+                                    // write the value out only when it is within the selected similarity range
+                                    if (avg != 0.0) {
+                                        PostBlockStat postBlockStat;
+                                        if (postBlock.isCodeBlock()) {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    1, thisSim.size() - 1,
+                                                    min, max, (avg / (thisSim.size() - 1)));
+                                        } else {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    0, thisSim.size() - 1,
+                                                    min, max, (avg / (thisSim.size() - 1)));
+                                        }
+                                        bufferedWriter.write(postBlockStat.toCSV());
                                     } else {
-                                        postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
-                                                0, 0, 0, 0, 0);
+                                        PostBlockStat postBlockStat;
+                                        if (postBlock.isCodeBlock()) {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    1, 0, 0, 0, 0);
+                                        } else {
+                                            postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                                    0, 0, 0, 0, 0);
+                                        }
+                                        bufferedWriter.write(postBlockStat.toCSV());
                                     }
-                                    bufferedWriter.write(postBlockStat.toCSV());
+                                } catch (SQLException e) {
+                                    e.printStackTrace();
                                 }
                             }
                         }
