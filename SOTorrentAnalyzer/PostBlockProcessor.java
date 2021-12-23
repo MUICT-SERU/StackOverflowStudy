@@ -12,7 +12,7 @@ public class PostBlockProcessor {
     private static double maxSimilarity = 0.9;
 
     public static void main(String[] args) {
-        String answerFilePath = home + "files/acceptedWithVersionAnswer3.txt";
+        String answerFilePath = home + "files/acceptedWithVersionAnswer_1000.txt";
         try {
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
@@ -89,22 +89,22 @@ public class PostBlockProcessor {
                 posts.add(post);
                 count++;
                 if (count % 1000 == 0) {
-                    System.out.println(count + " queries has been processed. There are " +
+                    System.out.println(count + " queries have been processed. There are " +
                             (countLine - count) + " queries left.");
                 }
             }
             System.out.println("Finished importing the data.");
 
-            //Write Post objects with PostHistory+PostBlock in to text file
+            // Option 1: Write Post objects with PostHistory+PostBlock in to text file
             // writeOutTextFile(posts);
 
-            //Calculate for changes in Posts #No File is written out
+            // Option 2: Calculate for changes in Posts #No File is written out
             // calculatePostChanges(posts);
 
-            //Calculate for Min, Max, Avg of similarity of each post
+            // Option 3: Calculate for Min, Max, Avg of similarity of each post
             calculateSimilarity(posts);
 
-            //Write out Diff files of each post in each postHistory
+            // Option 4: Write out Diff files of each post in each postHistory
             //writeDiffFiles(posts, statement3);
 
             bufferedReader.close();
