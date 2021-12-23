@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.sql.Date;
+import java.time.Duration;
 import java.util.*;
 
 
@@ -250,13 +251,23 @@ public class PostBlockProcessor {
                                     String query = "select creationDate from PostHistory where PostId=" +
                                             post.getPostId() + ";";
                                     ResultSet resultSet = statement.executeQuery(query);
-				    ArrayList<Date> creationDates = new ArrayList<Date>();
+                                    ArrayList<Date> creationDates = new ArrayList<Date>();
                                     while (resultSet.next()) {
                                         Date creationDate = resultSet.getDate("creationDate");
-					creationDates.add(creationDate);
+                                        creationDates.add(creationDate);
                                         System.out.println(creationDate.toString());
                                     }
-				
+                                    int count = 0;
+                                    long diffSum = 0;
+                                    if (creationDates.size() > 1) {
+                                        for (int j = 0; j < creationDates.size() - 1; j++) {
+                                            long diff = creationDates.get(j + 1).getTime() - creationDates.get(j).getTime();
+                                            diffSum += diff;
+                                            count++;
+                                        }
+                                    }
+                                    double avgDiffDays = diffSum / (count * 86400000);
+                                    System.out.println("The average post modification duration is: " + avgDiffDays);
                                     // write the value out only when it is within the selected similarity range
                                     if (avg != 0.0) {
                                         PostBlockStat postBlockStat;
