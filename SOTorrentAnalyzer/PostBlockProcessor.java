@@ -7,7 +7,9 @@ import java.util.*;
 
 
 public class PostBlockProcessor {
-    public static String home = "/mnt/disks/data/so_study/StackOverflowStudy/";
+    private static String home = "/mnt/disks/data/so_study/StackOverflowStudy/";
+    private static double minSimilarity = 0.8;
+    private static double maxSimilarity = 0.9;
 
     public static void main(String[] args) {
         String answerFilePath = home + "files/acceptedWithVersionAnswer.txt";
@@ -15,10 +17,8 @@ public class PostBlockProcessor {
             //Connect the program with MySQL DB
             System.out.println("The program has been initiated.");
             FileReader fileReader = new FileReader(answerFilePath);
-            // FileReader fileReader = new FileReader("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             Path path = Paths.get(answerFilePath);
-            // Path path = Paths.get("/home/jarvan_experiment/acceptedWithVersionAnswer2.txt"); //To Test with small file
             long countLine = Files.lines(path).count();
             String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
             String username = "sotorrent";
@@ -35,14 +35,16 @@ public class PostBlockProcessor {
             Statement statement = connection.createStatement();
             Statement statement2 = connection.createStatement();
             Statement statement3 = connection.createStatement();
-            System.out.println("Connected to the database successfully!\nBeginning querying process...\nThe number of queries initiated: " + countLine);
+            System.out.println("Connected to the database successfully!\nBeginning querying process..." +
+                    "\nThe number of queries initiated: " + countLine);
 
             // Processing Post by creating Post objects
             long count = 0;
             String s;
             ArrayList<Post> posts = new ArrayList<Post>();
             while ((s = bufferedReader.readLine()) != null) {
-                String query = "select PostHistoryId, MostRecentVersion from PostBlockVersion where PostId = " + s + " group by PostHistoryId, MostRecentVersion order by PostHistoryId desc;";
+                String query = "select PostHistoryId, MostRecentVersion from PostBlockVersion where PostId = " + s +
+                        " group by PostHistoryId, MostRecentVersion order by PostHistoryId desc;";
                 ResultSet resultSet = statement.executeQuery(query);
                 Post post = new Post(Integer.parseInt(s));
                 while (resultSet.next()) {
@@ -58,7 +60,9 @@ public class PostBlockProcessor {
                         post.getPostHistories().getLast().setPreviousPostHistoryId(postHistoryId);
                     }
 
-                    String query2 = "select Id, PostBlockTypeId, LocalId, PredPostHistoryId, PredPostBlockVersionId, PredLocalId, PredEqual, PredSimilarity from PostBlockVersion where PostHistoryId = " + postHistoryId + " order by LocalId;";
+                    String query2 = "select Id, PostBlockTypeId, LocalId, PredPostHistoryId, PredPostBlockVersionId, " +
+                            "PredLocalId, PredEqual, PredSimilarity from PostBlockVersion where PostHistoryId = "
+                            + postHistoryId + " order by LocalId;";
                     ResultSet resultSet2 = statement2.executeQuery(query2);
                     while (resultSet2.next()) {
                         int postBlockId = resultSet2.getInt("Id");
@@ -77,7 +81,8 @@ public class PostBlockProcessor {
                         if (predEqual == 1) isEqualToPrecedingBlock = true;
                         else isEqualToPrecedingBlock = false;
 
-                        PostBlock postBlock = new PostBlock(postBlockId, isCodeBlock, localId, precedingPostHistoryId, precedingLocalId, precedingPostBlockId, isEqualToPrecedingBlock, precedingSimilarity);
+                        PostBlock postBlock = new PostBlock(postBlockId, isCodeBlock, localId, precedingPostHistoryId,
+                                precedingLocalId, precedingPostBlockId, isEqualToPrecedingBlock, precedingSimilarity);
                         postHistory.addPostBlock(postBlock);
                     }
                     post.addPostHistory(postHistory);
@@ -85,7 +90,8 @@ public class PostBlockProcessor {
                 posts.add(post);
                 count++;
                 if (count % 1000 == 0) {
-                    System.out.println(count + " queries has been processed. There are " + (countLine - count) + " queries left.");
+                    System.out.println(count + " queries has been processed. There are " +
+                            (countLine - count) + " queries left.");
                 }
             }
             System.out.println("Finished importing the data.");
@@ -159,7 +165,8 @@ public class PostBlockProcessor {
             }
         }
         System.out.print("The program is done! ");
-        System.out.println("Code changes: " + codeChanges + ", Text changes: " + textChanges + ", BothChanges: " + bothChanges);
+        System.out.println("Code changes: " + codeChanges + ", Text changes: " + textChanges
+                + ", BothChanges: " + bothChanges);
     }
 
     private static boolean checkSimilarity(Post post, PostHistory postHistory, int postBlockId) {
@@ -169,7 +176,8 @@ public class PostBlockProcessor {
                 if (postBlock.getPrecedingPostBlockId() == 0) {
                     return true;
                 } else {
-                    return checkSimilarity(post, post.getPostHistory(postHistory.getPreviousPostHistoryId()), postBlock.getPrecedingPostBlockId());
+                    return checkSimilarity(post, post.getPostHistory(postHistory.getPreviousPostHistoryId()),
+                            postBlock.getPrecedingPostBlockId());
                 }
             } else {
                 return false;
@@ -203,11 +211,14 @@ public class PostBlockProcessor {
                             currentPostBlockId = precedingPostBlockId;
                             currentPostHistoryId = precedingPostHistoryId;
                             if (!doneSet.contains(currentPostBlockId)) {
-                                thisSim.add(post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingSimilarity());
+                                thisSim.add(post.getPostHistory(currentPostHistoryId).
+                                        getPostBlock(currentPostBlockId).getPrecedingSimilarity());
                                 doneSet.add(currentPostBlockId);
                             }
-                            precedingPostBlockId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
-                            precedingPostHistoryId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostHistoryId();
+                            precedingPostBlockId = post.getPostHistory(currentPostHistoryId).
+                                    getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
+                            precedingPostHistoryId = post.getPostHistory(currentPostHistoryId).
+                                    getPostBlock(currentPostBlockId).getPrecedingPostHistoryId();
                         } while (precedingPostBlockId != 0);
                         if (thisSim.size() > 0) {
                             double min = 1.0;
@@ -218,20 +229,27 @@ public class PostBlockProcessor {
                                 if (thisSim.get(x).doubleValue() > max) max = thisSim.get(x).doubleValue();
                                 avg = avg + thisSim.get(x).doubleValue();
                             }
-                            if (avg != 0.0) {
+                            // write the value out only when it is within the selected similarity range
+                            if (avg != 0.0 && (avg >= minSimilarity) && (avg <= maxSimilarity)) {
                                 PostBlockStat postBlockStat;
                                 if (postBlock.isCodeBlock()) {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(), 1, thisSim.size() - 1, min, max, (avg / (thisSim.size() - 1)));
+                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                            1, thisSim.size() - 1,
+                                            min, max, (avg / (thisSim.size() - 1)));
                                 } else {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(), 0, thisSim.size() - 1, min, max, (avg / (thisSim.size() - 1)));
+                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                            0, thisSim.size() - 1,
+                                            min, max, (avg / (thisSim.size() - 1)));
                                 }
                                 bufferedWriter.write(postBlockStat.toCSV());
                             } else {
                                 PostBlockStat postBlockStat;
                                 if (postBlock.isCodeBlock()) {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(), 1, 0, 0, 0, 0);
+                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                            1, 0, 0, 0, 0);
                                 } else {
-                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(), 0, 0, 0, 0, 0);
+                                    postBlockStat = new PostBlockStat(post.getPostId(), postBlock.getPostBlockId(),
+                                            0, 0, 0, 0, 0);
                                 }
                                 bufferedWriter.write(postBlockStat.toCSV());
                             }
@@ -268,20 +286,32 @@ public class PostBlockProcessor {
                             currentPostBlockId = precedingPostBlockId;
                             currentPostHistoryId = precedingPostHistoryId;
                             if (!doneSet.contains(currentPostBlockId)) {
-                                String query = "select count(*) as num from PostBlockDiff where PostBlockVersionId = " + post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId() + ";";
+                                String query = "select count(*) as num from PostBlockDiff where PostBlockVersionId = "
+                                        + post.getPostHistory(currentPostHistoryId).
+                                        getPostBlock(currentPostBlockId).getPostBlockId() + ";";
                                 ResultSet resultSet = statement.executeQuery(query);
                                 resultSet.next();
                                 if (resultSet.getInt("num") > 0) {
                                     int isCodeBlock = 0;
-                                    if (post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).isCodeBlock()) {
+                                    if (post.getPostHistory(currentPostHistoryId).
+                                            getPostBlock(currentPostBlockId).isCodeBlock()) {
                                         isCodeBlock = 1;
                                     }
-                                    File file = new File(directory + post.getPostId() + "/" + post.getPostId() + "-" + post.getPostHistory(currentPostHistoryId).getPostHistoryId() + "-" + post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getLocalId() + "-" + post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId() + "-" + post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId() + "-" + isCodeBlock + ".txt");
+                                    File file = new File(directory + post.getPostId() + "/" +
+                                            post.getPostId() + "-" + post.getPostHistory(currentPostHistoryId).
+                                            getPostHistoryId() + "-" + post.getPostHistory(currentPostHistoryId).
+                                            getPostBlock(currentPostBlockId).getLocalId() + "-" +
+                                            post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).
+                                                    getPostBlockId() + "-" + post.getPostHistory(currentPostHistoryId).
+                                            getPostBlock(currentPostBlockId).getPrecedingPostBlockId() + "-" +
+                                            isCodeBlock + ".txt");
                                     file.getParentFile().mkdirs();
                                     FileWriter fileWriter = new FileWriter(file);
                                     BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
                                     StringBuilder theFile = new StringBuilder();
-                                    query = "select * from PostBlockDiff where PostBlockVersionId = " + post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPostBlockId() + ";";
+                                    query = "select * from PostBlockDiff where PostBlockVersionId = " +
+                                            post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).
+                                                    getPostBlockId() + ";";
                                     resultSet = statement.executeQuery(query);
                                     while (resultSet.next()) {
                                         String[] stringSet = resultSet.getString("Text").split("\n");
@@ -300,8 +330,10 @@ public class PostBlockProcessor {
                                 }
                                 doneSet.add(currentPostBlockId);
                             }
-                            precedingPostBlockId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
-                            precedingPostHistoryId = post.getPostHistory(currentPostHistoryId).getPostBlock(currentPostBlockId).getPrecedingPostHistoryId();
+                            precedingPostBlockId = post.getPostHistory(currentPostHistoryId).
+                                    getPostBlock(currentPostBlockId).getPrecedingPostBlockId();
+                            precedingPostHistoryId = post.getPostHistory(currentPostHistoryId).
+                                    getPostBlock(currentPostBlockId).getPrecedingPostHistoryId();
                         } while (precedingPostBlockId != 0);
                     }
                 }
