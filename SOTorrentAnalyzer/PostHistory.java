@@ -1,5 +1,6 @@
+import java.io.Serializable;
 import java.util.*;
-public class PostHistory {
+public class PostHistory implements Serializable {
     private int postHistoryId;
     private int previousPostHistoryId;
     private boolean isMostRecent;

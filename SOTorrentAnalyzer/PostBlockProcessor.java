@@ -9,12 +9,33 @@ import java.util.*;
 
 
 public class PostBlockProcessor {
-    private static String home = "/mnt/disks/data/so_study/StackOverflowStudy/";
+    private static String home = "/Users/chaiyong/Downloads/StackOverflowStudy/";
     private static double minSimilarity = 0.8;
     private static double maxSimilarity = 0.9;
     private static double minDiffDays = 1;
 
     public static void main(String[] args) {
+            readAndSavePosts();
+            ArrayList<Post> loadedPosts = readPostsFromFile(home + "posts_data.ser");
+
+            // Option 1: Write Post objects with PostHistory+PostBlock in to text file
+            // writeOutTextFile(posts);
+            
+            // Option 2: Calculate for changes in Posts #No File is written out
+            ArrayList<int[]> postBlockChanges = calculatePostChanges(loadedPosts);
+            
+            // Print the statistics of post block changes
+            printBlockChangeStats(postBlockChanges);
+
+            // Option 3: Calculate for Min, Max, Avg of similarity of each post
+            // calculateSimilarity(posts);
+
+            // Option 4: Write out Diff files of each post in each postHistory
+            //writeDiffFiles(posts, statement3);
+
+    }
+
+    private static void readAndSavePosts() {
         String answerFilePath = home + "files/acceptedWithVersionAnswer.txt";
         try {
             //Connect the program with MySQL DB
@@ -24,8 +45,8 @@ public class PostBlockProcessor {
             Path path = Paths.get(answerFilePath);
             long countLine = Files.lines(path).count();
             String dbUrl = "jdbc:mysql://localhost:3306/sotorrent?autoReconnect=true&useSSL=false";
-            String username = "sotorrent";
-            String password = "stackoverflow";
+            String username = "root";
+            String password = "";
             try {
                 // The newInstance() call is a work around for some
                 // broken Java implementations
@@ -98,17 +119,8 @@ public class PostBlockProcessor {
             }
             System.out.println("Finished importing the data.");
 
-            // Option 1: Write Post objects with PostHistory+PostBlock in to text file
-            // writeOutTextFile(posts);
-
-            // Option 2: Calculate for changes in Posts #No File is written out
-            // calculatePostChanges(posts);
-
-            // Option 3: Calculate for Min, Max, Avg of similarity of each post
-            calculateSimilarity(posts);
-
-            // Option 4: Write out Diff files of each post in each postHistory
-            //writeDiffFiles(posts, statement3);
+            // Save posts to file using ObjectOutputStream
+            savePostsToFile(posts, home + "posts_data.ser");
 
             bufferedReader.close();
             fileReader.close();
@@ -137,38 +149,139 @@ public class PostBlockProcessor {
         }
     }
 
-    private static void calculatePostChanges(ArrayList<Post> posts) {
+    private static ArrayList<int[]> calculatePostChanges(ArrayList<Post> posts) {
         System.out.println("Start calculating Post changes...");
         //variables for counting
         int codeChanges = 0;
         int textChanges = 0;
         int bothChanges = 0;
+        
+        // ArrayList to store counters for each post block: [codeChanges, textChanges, bothChanges]
+        ArrayList<int[]> postBlockChanges = new ArrayList<int[]>();
 
         for (Post post : posts) {
-            LinkedList<PostHistory> postHistories = post.getPostHistories();
             PostHistory postHistory = post.getPostHistories().getFirst();
             boolean codeChange = false;
             boolean textChange = false;
+            
+            // Initialize counters for this post block
+            int[] changeCounters = new int[3]; // [codeChanges, textChanges, bothChanges]
+            
             for (int i = 0; i < postHistory.getPostBlocks().size(); i++) {
                 if (checkSimilarity(post, postHistory, postHistory.getPostBlocks().get(i).getPostBlockId()) == false) {
                     if (postHistory.getPostBlocks().get(i).isCodeBlock()) {
                         codeChange = true;
+                        changeCounters[0]++; // increment code change counter
                     } else {
                         textChange = true;
+                        changeCounters[1]++; // increment text change counter
                     }
                 }
                 if (codeChange && textChange) break;
             }
+            
             if (codeChange && textChange) {
                 bothChanges++;
+                changeCounters[2]++; // increment both changes counter
             } else {
                 if (codeChange) codeChanges++;
                 if (textChange) textChanges++;
             }
+            
+            // Add the counters for this post to the ArrayList
+            postBlockChanges.add(changeCounters);
         }
         System.out.print("The program is done! ");
         System.out.println("Code changes: " + codeChanges + ", Text changes: " + textChanges
                 + ", BothChanges: " + bothChanges);
+        
+        return postBlockChanges;
+    }
+
+    private static void printBlockChangeStats(ArrayList<int[]> postBlockChanges) {
+        System.out.println("Printing Post Block Change Statistics:");
+        System.out.println("Format: [CodeChanges, TextChanges, BothChanges]");
+        System.out.println("----------------------------------------");
+        
+        for (int i = 0; i < postBlockChanges.size(); i++) {
+            int[] changeCounters = postBlockChanges.get(i);
+            System.out.println("Post " + (i + 1) + ": [" + 
+                             changeCounters[0] + ", " + 
+                             changeCounters[1] + ", " + 
+                             changeCounters[2] + "]");
+        }
+        
+        // Calculate and print summary statistics
+        int totalCodeChanges = 0;
+        int totalTextChanges = 0;
+        int totalBothChanges = 0;
+        
+        for (int[] changeCounters : postBlockChanges) {
+            totalCodeChanges += changeCounters[0];
+            totalTextChanges += changeCounters[1];
+            totalBothChanges += changeCounters[2];
+        }
+        
+        System.out.println("----------------------------------------");
+        System.out.println("Summary Statistics:");
+        System.out.println("Total Posts Analyzed: " + postBlockChanges.size());
+        System.out.println("Total Code Changes: " + totalCodeChanges);
+        System.out.println("Total Text Changes: " + totalTextChanges);
+        System.out.println("Total Both Changes: " + totalBothChanges);
+        System.out.println("----------------------------------------");
+    }
+
+    private static void savePostsToFile(ArrayList<Post> posts, String fileName) {
+        String filePath = PostBlockProcessor.home + fileName;
+        
+        try {
+            FileOutputStream fileOut = new FileOutputStream(filePath);
+            ObjectOutputStream objectOut = new ObjectOutputStream(fileOut);
+            
+            objectOut.writeObject(posts);
+            
+            objectOut.close();
+            fileOut.close();
+            
+            System.out.println("Posts data has been successfully saved to: " + filePath);
+            System.out.println("Total posts saved: " + posts.size());
+            
+        } catch (IOException e) {
+            System.err.println("Error occurred while saving posts to file: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private static ArrayList<Post> readPostsFromFile(String filePath) {
+        ArrayList<Post> posts = null;
+        
+        try {
+            FileInputStream fileIn = new FileInputStream(filePath);
+            ObjectInputStream objectIn = new ObjectInputStream(fileIn);
+            
+            // Read the ArrayList of Post objects
+            @SuppressWarnings("unchecked")
+            ArrayList<Post> deserializedPosts = (ArrayList<Post>) objectIn.readObject();
+            posts = deserializedPosts;
+            
+            objectIn.close();
+            fileIn.close();
+            
+            System.out.println("Posts data has been successfully loaded from: " + filePath);
+            System.out.println("Total posts loaded: " + posts.size());
+            
+        } catch (FileNotFoundException e) {
+            System.err.println("File not found: " + filePath);
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("Error occurred while reading posts from file: " + e.getMessage());
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            System.err.println("Class not found during deserialization: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return posts;
     }
 
     private static boolean checkSimilarity(Post post, PostHistory postHistory, int postBlockId) {

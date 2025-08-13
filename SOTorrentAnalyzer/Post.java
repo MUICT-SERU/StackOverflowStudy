@@ -1,5 +1,6 @@
+import java.io.Serializable;
 import java.util.*;
-public class Post {
+public class Post implements Serializable {
     private int postId;
     private LinkedList<PostHistory> postHistories;
 

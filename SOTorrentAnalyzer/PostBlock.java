@@ -1,5 +1,6 @@
+import java.io.Serializable;
 import java.util.*;
-public class PostBlock {
+public class PostBlock implements Serializable {
     private int postBlockId;
     private boolean isCodeBlock;
     private int localId;
