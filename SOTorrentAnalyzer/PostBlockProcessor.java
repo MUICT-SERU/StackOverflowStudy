@@ -9,7 +9,7 @@ import java.util.*;
 
 
 public class PostBlockProcessor {
-    private static String home = "/Users/chaiyong/Downloads/StackOverflowStudy/";
+    private static String home = "/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/";
     private static double minSimilarity = 0.8;
     private static double maxSimilarity = 0.9;
     private static double minDiffDays = 1;
