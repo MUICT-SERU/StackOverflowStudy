@@ -1,6 +1,6 @@
 {
     "java.project.referencedLibraries": [
         "lib/**/*.jar",
-        "/Users/chaiyong/Downloads/StackOverflowStudy/mysql-connector-java-8.0.27.jar"
+        "/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/mysql-connector-java-8.0.27.jar"
     ]
 }
