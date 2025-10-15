@@ -360,9 +360,9 @@ def draw_code_size_histograms(projects_with_codelines_csv_path, save_path=None):
         
         if data_list:  # Only plot if there's data
             ax.hist(data_list, bins=bin_edges, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
-            ax.set_title(title, fontsize=16, fontweight='bold')
-            ax.set_xlabel('Lines of Code', fontsize=16)
-            ax.set_ylabel('Number of Projects (log scale)', fontsize=16)
+            # ax.set_title(title, fontsize=20, fontweight='bold')
+            ax.set_xlabel('Lines of Code (millions)', fontsize=20)
+            ax.set_ylabel('Number of Projects', fontsize=20)
             ax.tick_params(axis='both', which='major', labelsize=14)  # Set tick label font size
             ax.set_xlim(0, 2.5 * 1e7)  # Set consistent x-axis scale to 1 million
             ax.set_yscale('log')  # Set y-axis to logarithmic scale
@@ -935,19 +935,19 @@ if __name__ == "__main__":
     
     # # Create histograms
     # print("\nCreating histograms...")
-    # draw_code_size_histograms("projects_with_codelines.csv")
+    draw_code_size_histograms("/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/analysis/projects_with_codelines.csv")
     
-    # Example: Group bugfix recommendations by categories
-    print("\nGrouping bugfix recommendations...")
-    bugfix_result = bugfix_recommendations_by_groups("projects_with_codelines.csv")
-    print(f"\nBugfix recommendations data:")
-    print(f"Lesser category: {len(bugfix_result['bugfixes_lesser'])} entries")
-    print(f"Medium category: {len(bugfix_result['bugfixes_medium'])} entries")
-    print(f"High category: {len(bugfix_result['bugfixes_high'])} entries")
+    # # Example: Group bugfix recommendations by categories
+    # print("\nGrouping bugfix recommendations...")
+    # bugfix_result = bugfix_recommendations_by_groups("projects_with_codelines.csv")
+    # print(f"\nBugfix recommendations data:")
+    # print(f"Lesser category: {len(bugfix_result['bugfixes_lesser'])} entries")
+    # print(f"Medium category: {len(bugfix_result['bugfixes_medium'])} entries")
+    # print(f"High category: {len(bugfix_result['bugfixes_high'])} entries")
 
-    improving_result = improving_code_recommendations_by_groups("projects_with_codelines.csv")
+    # improving_result = improving_code_recommendations_by_groups("projects_with_codelines.csv")
 
-    # Create bugfix boxplots
-    # print("\nCreating bugfix boxplots...")
-    # draw_bugfix_boxplots("projects_with_codelines.csv")
-    stat_test("projects_with_codelines.csv")
+    # # Create bugfix boxplots
+    # # print("\nCreating bugfix boxplots...")
+    # # draw_bugfix_boxplots("projects_with_codelines.csv")
+    # stat_test("projects_with_codelines.csv")
