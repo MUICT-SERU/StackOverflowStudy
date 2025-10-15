@@ -250,28 +250,28 @@ def generate_boxplot(distances: List[int], output_path: str = None) -> bool:
     
     try:
         # Create a new figure with a specific size
-        plt.figure(figsize=(10, 3))
+        plt.figure(figsize=(10, 2))
         
         # Create a horizontal boxplot with the distances (vert=False makes it horizontal)
-        boxplot = plt.boxplot(distances, patch_artist=True, vert=False)
+        boxplot = plt.boxplot(distances, vert=False)
         
-        # Customize boxplot colors
-        for box in boxplot['boxes']:
-            box.set(facecolor='lightblue', edgecolor='blue', linewidth=2)
-        for whisker in boxplot['whiskers']:
-            whisker.set(color='blue', linewidth=2)
-        for cap in boxplot['caps']:
-            cap.set(color='blue', linewidth=2)
-        for median in boxplot['medians']:
-            median.set(color='red', linewidth=2)
-        for flier in boxplot['fliers']:
-            flier.set(marker='o', markerfacecolor='red', markersize=5, 
-                    markeredgecolor='black', alpha=0.5)
+        # # Customize boxplot colors
+        # for box in boxplot['boxes']:
+        #     box.set(facecolor='lightblue', edgecolor='blue', linewidth=2)
+        # for whisker in boxplot['whiskers']:
+        #     whisker.set(color='blue', linewidth=2)
+        # for cap in boxplot['caps']:
+        #     cap.set(color='blue', linewidth=2)
+        # for median in boxplot['medians']:
+        #     median.set(color='red', linewidth=2)
+        # for flier in boxplot['fliers']:
+        #     flier.set(marker='o', markerfacecolor='red', markersize=5, 
+        #             markeredgecolor='black', alpha=0.5)
         
         # Add title and labels
-        plt.title('Levenshtein Distance Distribution (Horizontal)', fontsize=16)
+        # plt.title('Levenshtein Distance Distribution (Horizontal)', fontsize=16)
         plt.xlabel('Levenshtein distance', fontsize=14)  # X-axis now represents distance values
-        plt.grid(True, linestyle='--', alpha=0.7)
+        # plt.grid(True, linestyle='--', alpha=0.7)
         
         # Remove y-tick labels as they're not meaningful in a single boxplot
         plt.yticks([])
@@ -536,9 +536,11 @@ if __name__ == "__main__":
         test_path = "/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/java_files"
     
     # Define output files
-    output_dir = os.path.dirname(test_path)
-    output_csv = os.path.join(output_dir, "levenshtein_distances.csv")
-    boxplot_path = os.path.join(output_dir, "levenshtein_boxplot.png")
+    current_dir = os.getcwd()  # Get current working directory
+    
+    # Use existing CSV in analysis directory for input, but save boxplot to current directory
+    output_csv = os.path.join(current_dir, "analysis/levenshtein_distances.csv")
+    boxplot_path = os.path.join(current_dir, "levenshtein_boxplot.png")
     
     # # Step 2: Find file pairs and compute distances
     # print("\n=== STEP 1: Finding file pairs and computing distances ===")
