@@ -626,16 +626,16 @@ def draw_bugfix_boxplots(projects_with_codelines_csv_path, save_path=None):
     # Add data for each category that has entries
     if data['bugfixes_lesser']:
         boxplot_data.append(data['bugfixes_lesser'])
-        labels.append('Lesser-quality')
+        labels.append('Low-popularity')
     
     if data['bugfixes_medium']:
         boxplot_data.append(data['bugfixes_medium'])
-        labels.append('Medium-quality')
+        labels.append('Medium-popularity')
     
     if data['bugfixes_high']:
         boxplot_data.append(data['bugfixes_high'])
-        labels.append('High-quality')
-    
+        labels.append('High-popularity')
+
     if not boxplot_data:
         print("No data available for boxplot creation.")
         return data
@@ -906,6 +906,167 @@ def stat_test(projects_with_codelines_csv_path):
     
     return results
 
+def improving_code_vs_gh_groups(improving_code_csv_path, save_path=None):
+    """
+    Read the improving_code.csv file and plot a black and white horizontal bar chart showing 
+    the count and percentage of values in the matcha_subtype column, grouped by the group column.
+    Uses different hatching patterns to distinguish between the bars.
+    
+    Args:
+        improving_code_csv_path (str): Path to the improving_code.csv file
+        save_path (str, optional): Path to save the figure. If None, uses default naming.
+        
+    Returns:
+        dict: Dictionary containing:
+            - 'counts': Dictionary with the counts of each matcha_subtype grouped by group
+            - 'percentages': Dictionary with the percentage of each matcha_subtype within its group
+            - 'group_totals': Dictionary with the total counts for each group
+    """
+    # Convert to Path object
+    csv_path = Path(improving_code_csv_path)
+    
+    # Validate input file
+    if not csv_path.exists():
+        raise ValueError(f"CSV file {improving_code_csv_path} does not exist")
+    
+    # Dictionary to store counts: {group: {subtype: count}}
+    group_subtype_counts = {}
+    
+    # Read the CSV and count occurrences
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as csvfile:
+            reader = csv.DictReader(csvfile)
+            
+            for row in reader:
+                group = row.get('group', '').strip()
+                subtype = row.get('matcha_subtype', '').strip()
+                
+                if group and subtype:
+                    if group not in group_subtype_counts:
+                        group_subtype_counts[group] = {}
+                    
+                    if subtype not in group_subtype_counts[group]:
+                        group_subtype_counts[group][subtype] = 0
+                    
+                    group_subtype_counts[group][subtype] += 1
+    
+    except Exception as e:
+        raise ValueError(f"Error reading CSV file: {e}") from e
+    
+    # Get all unique subtypes across all groups
+    all_subtypes = set()
+    for group_data in group_subtype_counts.values():
+        all_subtypes.update(group_data.keys())
+    all_subtypes = sorted(list(all_subtypes))
+    
+    # Get all groups and sort them
+    all_groups = sorted(group_subtype_counts.keys())
+    
+    # Calculate total counts for each group
+    group_totals = {}
+    for group in all_groups:
+        group_totals[group] = sum(group_subtype_counts[group].values())
+    
+    # Calculate percentages
+    group_subtype_percentages = {}
+    for group in all_groups:
+        group_subtype_percentages[group] = {}
+        total = group_totals[group]
+        if total > 0:  # Avoid division by zero
+            for subtype in all_subtypes:
+                count = group_subtype_counts[group].get(subtype, 0)
+                percentage = (count / total) * 100 if total > 0 else 0
+                group_subtype_percentages[group][subtype] = percentage
+    
+    # Print summary with counts and percentages
+    print("Improving Code Recommendations by Group and Subtype:")
+    for group in all_groups:
+        print(f"\nGroup {group} (Total: {group_totals[group]}):")
+        for subtype in all_subtypes:
+            count = group_subtype_counts[group].get(subtype, 0)
+            percentage = group_subtype_percentages[group].get(subtype, 0)
+            print(f"  {subtype}: {count} ({percentage:.2f}%)")
+    
+    # Create data for plotting
+    # For each subtype, create a list of counts across all groups
+    subtype_data = {}
+    subtype_percentages = {}
+    for subtype in all_subtypes:
+        subtype_data[subtype] = [group_subtype_counts.get(group, {}).get(subtype, 0) for group in all_groups]
+        subtype_percentages[subtype] = [group_subtype_percentages.get(group, {}).get(subtype, 0) for group in all_groups]
+    
+    # Set up the plot
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Position for bars
+    bar_positions = range(len(all_groups))
+    bar_width = 0.8 / len(all_subtypes)
+    
+    # Define patterns for black and white theme
+    # List of patterns: '/', '\', '|', '-', '+', 'x', 'o', 'O', '.', '*'
+    patterns = ['/', '\\', '|', '-', '+', 'x', 'o', 'O', '.', '*']
+    legend_patches = []
+    
+    for i, (subtype, counts) in enumerate(subtype_data.items()):
+        positions = [pos + i * bar_width for pos in bar_positions]
+        # Use black edgecolor and white facecolor with hatching pattern
+        bars = ax.barh(positions, counts, bar_width, label=subtype, 
+                      edgecolor='black', facecolor='white', 
+                      hatch=patterns[i % len(patterns)], alpha=0.9)
+        
+        # Add data labels to bars with both count and percentage
+        for j, (bar, count) in enumerate(zip(bars, counts)):
+            if count > 0:  # Only add label if count > 0
+                percentage = subtype_percentages[subtype][j]
+                label_text = f"{count} ({percentage:.1f}%)"
+                ax.text(bar.get_width() + 0.3, bar.get_y() + bar.get_height()/2, 
+                        label_text, ha='left', va='center', fontsize=9)
+        
+        # Add to legend with the same pattern
+        patch = plt.Rectangle((0, 0), 1, 1, 
+                             edgecolor='black', facecolor='white', 
+                             hatch=patterns[i % len(patterns)])
+        legend_patches.append(patch)
+    
+    # Set chart title and labels
+    # ax.set_title('Improving Code Recommendations by Group and Subtype', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Count', fontsize=14)
+    # ax.set_ylabel('Group', fontsize=14)
+    
+    # Set y-ticks
+    y_positions = [pos + (len(all_subtypes) - 1) * bar_width / 2 for pos in bar_positions]
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(['High-quality', 'Medium-quality', 'Low-quality'], fontsize=12)
+    
+    # Add legend with black & white style
+    legend = ax.legend(legend_patches, all_subtypes, loc='upper right', fontsize=10,
+                      frameon=True, facecolor='white', edgecolor='black')
+    
+    # Add grid lines (gray for black and white theme)
+    ax.grid(True, axis='x', linestyle='--', color='gray', alpha=0.5)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Generate filename if no save_path provided
+    if save_path is None:
+        save_path = "improving_code_vs_gh_groups.pdf"
+    
+    # Save the figure
+    plt.savefig(save_path, dpi=300, bbox_inches='tight', format='pdf')
+    print(f"Horizontal bar chart saved to: {save_path}")
+    
+    # Display the plot
+    plt.show()
+    
+    # Return both counts and percentages
+    return {
+        'counts': group_subtype_counts,
+        'percentages': group_subtype_percentages,
+        'group_totals': group_totals
+    }
+
+
 # Example usage
 if __name__ == "__main__":
     # Example: count_code_lines("/Users/chaiyong/Downloads/do_not_delete/Matcha Study/GHProjects")
@@ -922,6 +1083,7 @@ if __name__ == "__main__":
     print("6. improving_code_recommendations_by_groups(projects_with_codelines_csv) - Group improving code recommendations by categories")
     print("7. draw_bugfix_boxplots(projects_with_codelines_csv) - Create boxplots of bugfix recommendations")
     print("8. stat_test(projects_with_codelines_csv) - Perform statistical tests on bugfix recommendations")
+    print("9. improving_code_vs_gh_groups(improving_code_csv) - Plot horizontal bar chart of matcha_subtype counts by group")
     
     # count_code_lines("/Users/chaiyong/Downloads/do_not_delete/Matcha Study/GHProjects", "code_lines_count.csv")
     # map_lines_to_project("GH_selection_revise_FIXED.csv", "code_lines_count.csv")
@@ -935,7 +1097,7 @@ if __name__ == "__main__":
     
     # # Create histograms
     # print("\nCreating histograms...")
-    draw_code_size_histograms("/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/analysis/projects_with_codelines.csv")
+    # draw_code_size_histograms("/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/analysis/projects_with_codelines.csv")
     
     # # Example: Group bugfix recommendations by categories
     # print("\nGrouping bugfix recommendations...")
@@ -949,5 +1111,10 @@ if __name__ == "__main__":
 
     # # Create bugfix boxplots
     # # print("\nCreating bugfix boxplots...")
-    # # draw_bugfix_boxplots("projects_with_codelines.csv")
+    # draw_bugfix_boxplots("/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/analysis/projects_with_codelines.csv")
     # stat_test("projects_with_codelines.csv")
+    
+    # Example: Create horizontal bar chart for improving code vs github groups
+    # improving_code_vs_gh_groups("/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/SOPostProcessor/analysis/improving_code.csv")
+
+    
