@@ -127,6 +127,96 @@ where `PostBlockTypeId` is either 0 or 1 — 0 is a Text block and 1 is a Code b
 > compiler cannot find the `.jar` for SQL. Run
 > `export CLASSPATH=$CLASSPATH:/usr/share/java/mysql-connector-java.jar` to bypass it.
 
+## Redoing the study for Python SO posts
+
+SOTorrent and the version-history model are language-agnostic, so most of the pipeline
+is reusable. The language shows up mainly in the *input selection* plus a few hardcoded
+file extensions.
+
+### 0. Data collection (the biggest new work)
+
+**Build the list of accepted Python answers that contain revisions.** This is the Python
+analog of `files/acceptedWithVersionAnswer.txt`. In SOTorrent:
+
+- **Accepted** → the answer's `Id` equals its parent question's `AcceptedAnswerId`.
+- **Python** → the *parent question* is tagged `python` (answers carry no tags of their
+  own; only questions have the `Posts.Tags` column, e.g. `<python><pandas>`).
+- **Contains revisions** → the answer has more than one row in `PostVersion` (edited at
+  least once).
+
+```sql
+SELECT a.Id
+FROM Posts q
+JOIN Posts a ON a.Id = q.AcceptedAnswerId          -- accepted answer of the question
+JOIN (
+    SELECT PostId, COUNT(*) AS versionCount
+    FROM PostVersion
+    GROUP BY PostId
+    HAVING COUNT(*) > 1                             -- more than one version = revised
+) v ON v.PostId = a.Id
+WHERE q.PostTypeId = 1
+  AND q.Tags LIKE '%<python>%'                      -- question tagged python
+ORDER BY a.Id;
+```
+
+`LIKE '%<python>%'` is safe because SO wraps tags in angle brackets, so it won't match
+`<python-3.x>` etc. For cleaner matching (or to include ecosystem tags like `pandas`),
+join the SOTorrent `PostTags` + `Tags` tables instead:
+`JOIN PostTags pt ON pt.PostId = q.Id JOIN Tags t ON t.Id = pt.TagId WHERE t.TagName = 'python'`.
+
+Optionally require a code block (the study is about *code* edits):
+`AND EXISTS (SELECT 1 FROM PostBlockVersion pb WHERE pb.PostId = a.Id AND pb.PostBlockTypeId = 2)`.
+
+Export it one bare ID per line, in the format the Java stage expects:
+
+```bash
+mysql -u root -p -N -B sotorrent \
+  -e "SELECT a.Id FROM Posts q JOIN Posts a ON a.Id = q.AcceptedAnswerId \
+      JOIN (SELECT PostId FROM PostVersion GROUP BY PostId HAVING COUNT(*) > 1) v \
+        ON v.PostId = a.Id \
+      WHERE q.PostTypeId = 1 AND q.Tags LIKE '%<python>%' ORDER BY a.Id;" \
+  > files/acceptedWithVersionAnswer_python.txt
+```
+
+`-N` drops the header row, `-B` gives plain tab/newline output. Sanity-check the size
+first with `SELECT COUNT(*)` (the Java set was ~140k). If your SOTorrent instance has no
+`PostVersion` table, count revisions the way the Java code already does —
+`COUNT(DISTINCT PostHistoryId) > 1` from `PostBlockVersion`.
+
+**Also collect a Python GitHub project selection** — the analog of
+`../GHProjects/` + `analysis/GH_selection_revise_FIXED.csv`, with the same metadata
+columns and `stars_region` / `forks_region` / `watchers_region` buckets.
+
+### 1. Java extractor (`SOTorrentAnalyzer/`)
+
+Mostly reusable as-is — the `PostBlockVersion` / `PostBlockDiff` queries and the
+`PostBlockTypeId == 2` code-block check are language-agnostic. Just point
+`answerFilePath` ([PostBlockProcessor.java:39](SOTorrentAnalyzer/PostBlockProcessor.java#L39))
+at the new Python ID file, and fix the `savePostsToFile` path bug (see below) while you're
+there. Re-run to regenerate `similarity.csv` and the diff files.
+
+### 2. Edit-distance analysis (`analysis/code_diff.py`)
+
+- Produce Python snippet pairs `*_original.py` / `*_recent.py` (analog of `../java_files/`).
+- Change the hardcoded extensions and prefix-strip offsets in `get_answer_version_pair`
+  ([code_diff.py:428-437](analysis/code_diff.py#L428-L437)): `_original.py` is 12 chars,
+  `_recent.py` is 10 (vs. 14 / 12 for `.java`).
+- Update the default input path and re-run.
+
+### 3. GitHub project analysis (`analysis/analysis.py`)
+
+- Change `code_extensions = {'.java'}` → `{'.py'}`
+  ([analysis.py:45](analysis/analysis.py#L45)).
+- Point `count_code_lines` / `map_lines_to_project` at the Python projects dir and the new
+  selection CSV. Grouping, histograms, boxplots, and stats work unchanged afterward.
+
+### 4. The "Matcha" recommendation step
+
+The `bugfix` / `improvingcode` / `matcha_subtype` labels come from the Matcha tool (outputs
+in `../Matcha Results/`, code not in this repo). **Open question: does Matcha support
+Python?** If it's Java-only, this is the step needing the most investigation before
+Stage 3's label columns can be populated.
+
 ## Known issues / cleanup candidates
 
 - **Duplicated group-bucketing logic**: `group_lines_by_categories`,
