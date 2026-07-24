@@ -3,8 +3,10 @@
 """
 Code Diff Analysis Tool
 
-This script provides utilities for finding and comparing Java code files.
+This script provides utilities for finding and comparing code files.
 It can find pairs of files with matching prefixes and compute edit distances between them.
+Java, Python and JavaScript files are supported by default; other languages can be
+analysed by passing their file extension (see --ext).
 
 Dependencies:
     - python-Levenshtein (optional): For faster edit distance calculation
@@ -16,7 +18,10 @@ Dependencies:
 import os
 import csv
 import math
-from typing import List, Tuple, Dict
+from typing import Iterable, List, Optional, Tuple, Dict, Union
+
+# File extensions searched for when none are given explicitly
+DEFAULT_EXTENSIONS = ('java', 'py', 'js')
 
 # Try to import matplotlib for visualization
 try:
@@ -219,42 +224,51 @@ def analyze_levenshtein_distances(csv_path: str = None, distances: List[int] = N
     }
 
 
-def generate_boxplot(distances: List[int], output_path: str = None) -> bool:
+def generate_boxplot(distances: List[int], output_path: str = None,
+                     show_outliers: bool = True, show: bool = True) -> bool:
     """
     Generate a horizontal boxplot visualization of the Levenshtein distances.
-    
+
     Args:
         distances: A list of Levenshtein distance values
         output_path: Path to save the boxplot image (optional)
                      If not provided, the plot will be displayed but not saved.
                      The function saves both PNG and PDF formats.
-                     
+        show_outliers: Whether to draw the outlier points (fliers). Set to False for a
+                       version zoomed in on the box and whiskers, which is easier to read
+                       when a few very large distances dominate the axis.
+        show: Whether to open the plot in a window. Set to False when generating
+              several plots in a row so the run does not block on each one.
+
     Returns:
         True if successful, False otherwise
-        
+
     Example:
         >>> distances = [42, 17, 56, 23, 89, 12, 45]
         >>> generate_boxplot(distances, 'levenshtein_boxplot.png')
         # Saves both levenshtein_boxplot.png and levenshtein_boxplot.pdf
+        True
+        >>> generate_boxplot(distances, 'levenshtein_boxplot_no_outliers.png', show_outliers=False)
         True
     """
     # Check if matplotlib is available
     if not MATPLOTLIB_AVAILABLE:
         print("Cannot generate boxplot: Matplotlib library is not available")
         return False
-        
+
     # Check if there are any distances to plot
     if not distances:
         print("Cannot generate boxplot: No distances provided")
         return False
-    
+
     try:
         # Create a new figure with a specific size
         plt.figure(figsize=(10, 2))
-        
-        # Create a horizontal boxplot with the distances (vert=False makes it horizontal)
-        boxplot = plt.boxplot(distances, vert=False)
-        
+
+        # Create a horizontal boxplot with the distances (vert=False makes it horizontal).
+        # showfliers=False drops the outlier points so the axis is scaled to the whiskers.
+        boxplot = plt.boxplot(distances, vert=False, showfliers=show_outliers)
+
         # # Customize boxplot colors
         # for box in boxplot['boxes']:
         #     box.set(facecolor='lightblue', edgecolor='blue', linewidth=2)
@@ -287,24 +301,48 @@ def generate_boxplot(distances: List[int], output_path: str = None) -> bool:
         # plt.annotate(stats_text, xy=(0.02, 0.95), xycoords='figure fraction', 
         #             fontsize=12, bbox=dict(boxstyle="round,pad=0.5", fc="white", ec="gray", alpha=0.8))
         
+        plt.tight_layout()
+
         # Save the figure if a path is provided
         if output_path:
             plt.savefig(output_path, dpi=300, bbox_inches='tight')
             print(f"Horizontal boxplot saved to: {output_path}")
-            
+
             # Save as PDF (replace extension or add .pdf if no extension)
             pdf_path = os.path.splitext(output_path)[0] + '.pdf'
             plt.savefig(pdf_path, format='pdf', bbox_inches='tight')
             print(f"Horizontal boxplot saved as PDF: {pdf_path}")
-        
+
         # Show the plot (this will display the plot in a new window)
-        plt.tight_layout()
-        plt.show()
-        
+        if show:
+            plt.show()
+
+        # Release the figure so repeated calls do not accumulate open figures
+        plt.close()
+
         return True
     except Exception as e:
         print(f"Error generating boxplot: {e}")
         return False
+
+
+def add_filename_suffix(path: str, suffix: str) -> str:
+    """
+    Insert a suffix before a path's extension.
+
+    Args:
+        path: The original file path.
+        suffix: The suffix to insert before the extension.
+
+    Returns:
+        The path with the suffix inserted.
+
+    Example:
+        >>> add_filename_suffix('levenshtein_boxplot.png', '_no_outliers')
+        'levenshtein_boxplot_no_outliers.png'
+    """
+    root, ext = os.path.splitext(path)
+    return f"{root}{suffix}{ext}"
 
 
 def save_distances_to_csv(distances: List[Tuple[str, str, int]], output_path: str) -> bool:
@@ -386,81 +424,131 @@ def levenshtein_distance(s1: str, s2: str) -> int:
     return matrix[rows-1][cols-1]
 
 
-def get_answer_version_pair(path: str) -> List[Tuple[str, str]]:
+def normalize_extensions(extensions: Optional[Union[str, Iterable[str]]] = None) -> Tuple[str, ...]:
+    """
+    Normalise a user-supplied extension specification into a tuple of bare,
+    lower-case extensions.
+
+    Accepts a single extension, an iterable of extensions, or None (meaning
+    DEFAULT_EXTENSIONS). Leading dots and surrounding whitespace are stripped, so
+    '.py', 'py' and ' PY ' are all equivalent.
+
+    Args:
+        extensions: A single extension, an iterable of extensions, or None.
+
+    Returns:
+        A tuple of bare, lower-case extensions.
+
+    Example:
+        >>> normalize_extensions(['.py', 'JS'])
+        ('py', 'js')
+        >>> normalize_extensions(None)
+        ('java', 'py', 'js')
+    """
+    if extensions is None:
+        return DEFAULT_EXTENSIONS
+
+    # A bare string is a single extension, not an iterable of characters
+    if isinstance(extensions, str):
+        extensions = [extensions]
+
+    normalized = []
+    for ext in extensions:
+        ext = ext.strip().lstrip('.').lower()
+        # Skip empty entries so 'py,,js' and a trailing comma are tolerated
+        if ext and ext not in normalized:
+            normalized.append(ext)
+
+    return tuple(normalized)
+
+
+def get_answer_version_pair(path: str,
+                            extensions: Optional[Union[str, Iterable[str]]] = None) -> List[Tuple[str, str]]:
     """
     Find all pairs of files in the given path that share the same prefix, where
-    one file ends with '_original.java' and the other with '_recent.java'.
+    one file ends with '_original.<ext>' and the other with '_recent.<ext>'.
 
     Args:
         path: A string representing the directory path to search in.
-        
+        extensions: Extension(s) to look for, e.g. 'py' or ['java', 'js'].
+                    Defaults to DEFAULT_EXTENSIONS ('java', 'py', 'js').
+
     Returns:
         A list of tuples, where each tuple contains two file paths (original_file, recent_file).
         Returns an empty list if no matching pairs are found or the path doesn't exist.
-        
+
     Example:
         >>> get_answer_version_pair('/path/to/files')
         [
             ('/path/to/files/answer1_original.java', '/path/to/files/answer1_recent.java'),
-            ('/path/to/files/answer2_original.java', '/path/to/files/answer2_recent.java')
+            ('/path/to/files/answer2_original.py', '/path/to/files/answer2_recent.py')
         ]
     """
     # List to store all matching pairs
     matching_pairs = []
-    
+
     # Check if the path exists and is a directory
     if not os.path.exists(path) or not os.path.isdir(path):
         return matching_pairs
-    
-    # Dictionary to store files by their prefix
+
+    exts = normalize_extensions(extensions)
+
+    # Dictionary to store files by their (prefix, extension) key. Keying on the
+    # extension as well keeps an answer1_original.py from pairing with an
+    # answer1_recent.js when several languages share a folder.
     file_dict = {
-        'original': {},  # Will store original files with prefix as key
-        'recent': {}     # Will store recent files with prefix as key
+        'original': {},  # Will store original files with (prefix, ext) as key
+        'recent': {}     # Will store recent files with (prefix, ext) as key
     }
-    
+
     # Get all files in the directory
     for item in os.listdir(path):
         item_path = os.path.join(path, item)
-        
+
         # Only process regular files
-        if os.path.isfile(item_path):
-            # Check if the file ends with _original.java
-            if item.endswith('_original.java'):
-                # Extract the prefix (everything before _original.java)
-                prefix = item[:-14]  # Remove '_original.java'
-                file_dict['original'][prefix] = item_path
-            
-            # Check if the file ends with _recent.java
-            elif item.endswith('_recent.java'):
-                # Extract the prefix (everything before _recent.java)
-                prefix = item[:-12]  # Remove '_recent.java'
-                file_dict['recent'][prefix] = item_path
-    
-    # Look for matching pairs (same prefix)
-    for prefix in file_dict['original']:
-        if prefix in file_dict['recent']:
+        if not os.path.isfile(item_path):
+            continue
+
+        for ext in exts:
+            for version in ('original', 'recent'):
+                suffix = f'_{version}.{ext}'
+                if item.endswith(suffix):
+                    # Extract the prefix (everything before the suffix)
+                    prefix = item[:-len(suffix)]
+                    file_dict[version][(prefix, ext)] = item_path
+                    break
+
+    # Look for matching pairs (same prefix and extension)
+    for key in file_dict['original']:
+        if key in file_dict['recent']:
             # Found a matching pair, add it to our list
-            matching_pairs.append((file_dict['original'][prefix], file_dict['recent'][prefix]))
-    
-    # Return all matching pairs
-    return matching_pairs
+            matching_pairs.append((file_dict['original'][key], file_dict['recent'][key]))
+
+    # Sorted so runs over the same folder produce a stable CSV ordering
+    return sorted(matching_pairs)
 
 
-def find_and_compute_distances(base_path: str) -> List[Tuple[str, str, int]]:
+def find_and_compute_distances(base_path: str,
+                               extensions: Optional[Union[str, Iterable[str]]] = None) -> List[Tuple[str, str, int]]:
     """
     Find all original-recent file pairs in the given path and compute
     Levenshtein distances between them.
-    
+
     Args:
         base_path: Base directory path to search in.
-        
+        extensions: Extension(s) to look for, e.g. 'py' or ['java', 'js'].
+                    Defaults to DEFAULT_EXTENSIONS ('java', 'py', 'js').
+
     Returns:
         A list of tuples containing (file_path1, file_path2, distance).
     """
+    exts = normalize_extensions(extensions)
+
     # Get all folders in the base path
     all_folders = get_all_folders(base_path)
     print(f"Found {len(all_folders)} folders in {base_path}")
-    
+    print(f"Looking for file extensions: {', '.join('.' + e for e in exts)}")
+
     # List to store all distance records
     all_distances = []
     total_pairs_found = 0
@@ -474,7 +562,7 @@ def find_and_compute_distances(base_path: str) -> List[Tuple[str, str, int]]:
         print(f"\nExamining folder: {folder}")
         
         # Call get_answer_version_pair for each folder
-        file_pairs = get_answer_version_pair(folder_path)
+        file_pairs = get_answer_version_pair(folder_path, exts)
         
         if file_pairs:
             folder_pairs_count = len(file_pairs)
@@ -525,61 +613,101 @@ def print_statistics(stats: Dict) -> None:
 
 
 if __name__ == "__main__":
-    # Example usage
     import sys
-    import os.path
-    
-    # Step 1: Determine input path and output paths
-    if len(sys.argv) > 1:
-        test_path = sys.argv[1]
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Compute and analyse Levenshtein distances between original/recent answer versions.",
+        epilog=("Examples:\n"
+                "  # Re-plot the distances already stored in the default CSV\n"
+                "  python analysis/code_diff.py\n\n"
+                "  # Compute distances for the Python answer files\n"
+                "  python analysis/code_diff.py --recompute --ext py \\\n"
+                "      --path ../python_files --csv analysis/levenshtein_distances_python.csv\n\n"
+                "  # Same for JavaScript\n"
+                "  python analysis/code_diff.py --recompute --ext js \\\n"
+                "      --path ../javascript_files --csv analysis/levenshtein_distances_javascript.csv"),
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--path",
+        default="/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/java_files",
+        help="Base directory containing one subfolder per answer (default: %(default)s)")
+    parser.add_argument(
+        "--ext",
+        default=",".join(DEFAULT_EXTENSIONS),
+        help="Comma-separated file extension(s) to pair up, e.g. 'py' or 'java,js' "
+             "(default: %(default)s)")
+    parser.add_argument(
+        "--csv",
+        default=os.path.join(os.getcwd(), "analysis/levenshtein_distances.csv"),
+        help="CSV file distances are written to and read back from (default: %(default)s)")
+    parser.add_argument(
+        "--boxplot",
+        default=os.path.join(os.getcwd(), "levenshtein_boxplot.png"),
+        help="Output path for the boxplot; a PDF is saved alongside it, plus a second "
+             "'_no_outliers' pair with the fliers hidden (default: %(default)s)")
+    parser.add_argument(
+        "--recompute",
+        action="store_true",
+        help="Scan --path and overwrite --csv. Without this flag the existing CSV is reused.")
+    parser.add_argument(
+        "--no-plot",
+        action="store_true",
+        help="Skip generating the boxplots; only print the statistics.")
+    parser.add_argument(
+        "--no-show",
+        action="store_true",
+        help="Save the boxplots without opening them in a window (useful for batch runs).")
+
+    args = parser.parse_args()
+    extensions = normalize_extensions(args.ext.split(','))
+
+    if not extensions:
+        print("Error: no valid file extensions given via --ext")
+        sys.exit(1)
+
+    # Step 1: Compute distances and save them, unless we are reusing the CSV
+    if args.recompute:
+        print("\n=== STEP 1: Finding file pairs and computing distances ===")
+        all_distances = find_and_compute_distances(args.path, extensions)
+
+        if not all_distances:
+            print("\nNo distances were computed. Exiting.")
+            sys.exit(0)
+
+        print("\n=== STEP 2: Saving distances to CSV file ===")
+        if save_distances_to_csv(all_distances, args.csv):
+            print(f"Levenshtein distances saved to: {args.csv}")
+        else:
+            print("Failed to save distances to CSV file.")
+            sys.exit(1)
     else:
-        test_path = "/Users/chaiyong/Downloads/do_not_delete/Matcha_Study/java_files"
-    
-    # Define output files
-    current_dir = os.getcwd()  # Get current working directory
-    
-    # Use existing CSV in analysis directory for input, but save boxplot to current directory
-    output_csv = os.path.join(current_dir, "analysis/levenshtein_distances.csv")
-    boxplot_path = os.path.join(current_dir, "levenshtein_boxplot.png")
-    
-    # # Step 2: Find file pairs and compute distances
-    # print("\n=== STEP 1: Finding file pairs and computing distances ===")
-    # all_distances = find_and_compute_distances(test_path)
-    
-    # if not all_distances:
-    #     print("\nNo distances were computed. Exiting.")
-    #     sys.exit(0)
-    
-    # # Step 3: Save distances to CSV file
-    # print("\n=== STEP 2: Saving distances to CSV file ===")
-    # if save_distances_to_csv(all_distances, output_csv):
-    #     print(f"Levenshtein distances saved to: {output_csv}")
-    # else:
-    #     print("Failed to save distances to CSV file.")
-    #     sys.exit(1)
-    
-    # Step 4: Read distances from CSV
+        print(f"Reusing existing distances in {args.csv} (pass --recompute to rebuild it)")
+
+    # Step 2: Read distances back from CSV
     print("\n=== STEP 3: Reading distances from CSV ===")
-    distances = read_distances_from_csv(output_csv)
+    distances = read_distances_from_csv(args.csv)
     if not distances:
         print("No valid distances found. Exiting.")
         sys.exit(1)
     print(f"Successfully read {len(distances)} distance values from CSV.")
-    
-    # Step 5: Analyze the distances and print statistics
+
+    # Step 3: Analyze the distances and print statistics
     print("\n=== STEP 4: Analyzing distances ===")
     stats = analyze_levenshtein_distances(distances=distances)
     print_statistics(stats)
-    
-    # Step 6: Generate visualizations (PNG and PDF)
-    print("\n=== STEP 5: Generating visualizations ===")
-    if distances:
-        print("Generating boxplot visualizations (PNG and PDF)...")
-        pdf_path = os.path.splitext(boxplot_path)[0] + '.pdf'
-        if generate_boxplot(distances, boxplot_path):
-            # The function itself now prints the output paths
-            pass
-        else:
-            print("Failed to generate boxplot visualizations.")
+
+    # Step 4: Generate visualizations (PNG and PDF), with and without outliers
+    if args.no_plot:
+        print("\nSkipping visualisation (--no-plot).")
     else:
-        print("No valid distance data available for visualization.")
+        print("\n=== STEP 5: Generating visualizations ===")
+        no_outliers_path = add_filename_suffix(args.boxplot, '_no_outliers')
+
+        print("Generating boxplot with outliers (PNG and PDF)...")
+        if not generate_boxplot(distances, args.boxplot, show_outliers=True, show=not args.no_show):
+            print("Failed to generate boxplot with outliers.")
+
+        print("\nGenerating boxplot without outliers (PNG and PDF)...")
+        if not generate_boxplot(distances, no_outliers_path, show_outliers=False, show=not args.no_show):
+            print("Failed to generate boxplot without outliers.")
