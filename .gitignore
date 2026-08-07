@@ -27,5 +27,9 @@ similarity.csv
 # Generated Levenshtein distance data, too large for GitHub (>100 MB)
 analysis/levenshtein_distances_*.csv
 
+# Python bytecode
+__pycache__/
+*.py[cod]
+
 .venv
 venv
