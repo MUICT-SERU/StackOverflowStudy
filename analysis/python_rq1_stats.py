@@ -12,7 +12,9 @@ Reproduces, for Python, the numbers reported in the Java RQ1 paragraph:
   - the answer with the most revisions (+ its date span)
   - a revisions-distribution histogram (post_revisions_histogram.pdf)
 
-The filtered set is read from the answer-id file produced by extract_answer_list.py.
+The filtered set is selected directly from SOTorrent with the same predicate as
+extract_answer_list.py (accepted + tagged + edited at least once), so it cannot drift away
+from the baseline. The answer-id file, if present, is used only as a cross-check.
 Baseline figures are computed over *all* accepted answers for the tag.
 
 Dependency:
@@ -105,19 +107,56 @@ def compute_baseline(cursor, tag_id):
     }
 
 
-def load_filtered_ids(cursor, answer_list):
-    """Load the filtered answer ids from the list file into a temporary table."""
-    if not answer_list.exists():
-        sys.exit(f"Answer list not found: {answer_list}\n"
-                 f"Run extract_answer_list.py first.")
-    ids = [int(line) for line in answer_list.read_text().split() if line.strip()]
-    log(f"\n[filtered] loading {len(ids):,} answer ids from {answer_list.name}...")
+# Canonical definition of the filtered set, kept identical to extract_answer_list.py and
+# to the Java study: an accepted answer of a question carrying the tag, which has been
+# edited at least once. Deriving it here rather than trusting a previously written id file
+# means the percentage reported below always matches the baseline denominator computed in
+# the same session, and that the same predicate is provably used for every language.
+FILTERED_SET_SQL = """
+    SELECT a.Id
+    FROM Posts q
+    JOIN PostTags pt ON pt.PostId = q.Id AND pt.TagId = %s
+    JOIN Posts    a  ON a.Id = q.AcceptedAnswerId
+    WHERE q.PostTypeId = 1
+      AND EXISTS (SELECT 1 FROM PostVersion pv
+                  WHERE pv.PostId = a.Id AND pv.PredPostHistoryId IS NOT NULL)
+"""
+
+
+def load_filtered_ids(cursor, tag_id, answer_list=None):
+    """Select the revised accepted answers for the tag into a temporary table.
+
+    The ids come from the database, not from a file, so the filtered set cannot drift
+    away from the baseline. When answer_list is given and exists, it is compared against
+    the query result and any disagreement is reported, which catches a stale file or one
+    built with a different predicate (e.g. extract_answer_list.py --require-code-block).
+    """
+    log("\n[filtered] selecting revised accepted answers...")
+    cursor.execute(FILTERED_SET_SQL, (tag_id,))
+    ids = [row[0] for row in cursor.fetchall()]
+    log(f"[filtered] {len(ids):,} answers")
+
     cursor.execute("DROP TEMPORARY TABLE IF EXISTS _rq1_filtered")
     cursor.execute("CREATE TEMPORARY TABLE _rq1_filtered (Id INT PRIMARY KEY)")
     for i in range(0, len(ids), INSERT_BATCH):
         batch = ids[i:i + INSERT_BATCH]
         cursor.executemany("INSERT IGNORE INTO _rq1_filtered (Id) VALUES (%s)",
                            [(x,) for x in batch])
+
+    if answer_list is not None and answer_list.exists():
+        file_ids = {int(line) for line in answer_list.read_text().split() if line.strip()}
+        query_ids = set(ids)
+        if file_ids == query_ids:
+            log(f"[filtered] cross-check: matches {answer_list.name} exactly")
+        else:
+            log(f"[filtered] WARNING: {answer_list.name} disagrees with the query.")
+            log(f"[filtered]   in file only:  {len(file_ids - query_ids):,}")
+            log(f"[filtered]   in query only: {len(query_ids - file_ids):,}")
+            log("[filtered]   the query result is used; rerun extract_answer_list.py "
+                "to refresh the file.")
+    elif answer_list is not None:
+        log(f"[filtered] cross-check skipped, {answer_list} not found")
+
     return len(ids)
 
 
@@ -197,7 +236,8 @@ def main():
     parser.add_argument("--database", default="sotorrent")
     parser.add_argument("--tag", default="python")
     parser.add_argument("--answer-list", type=Path, default=DEFAULT_ANSWER_LIST,
-                        help="Filtered answer-id file from extract_answer_list.py")
+                        help="Answer-id file from extract_answer_list.py, used only as a "
+                             "cross-check against the filtered set selected from the database")
     parser.add_argument("--hist-output", type=Path,
                         default=ANALYSIS_DIR / "post_revisions_histogram.pdf")
     parser.add_argument("--skip-baseline", action="store_true",
@@ -212,7 +252,7 @@ def main():
 
         baseline = None if args.skip_baseline else compute_baseline(cursor, tag_id)
 
-        filtered_total = load_filtered_ids(cursor, args.answer_list)
+        filtered_total = load_filtered_ids(cursor, tag_id, args.answer_list)
         f = compute_filtered(cursor)
         db.commit()
         cursor.close()
