@@ -24,5 +24,8 @@ hs_err_pid*
 
 similarity.csv
 
+# Generated Levenshtein distance data, too large for GitHub (>100 MB)
+analysis/levenshtein_distances_*.csv
+
 .venv
 venv
