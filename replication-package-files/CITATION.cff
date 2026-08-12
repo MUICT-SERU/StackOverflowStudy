@@ -6,12 +6,12 @@ title: >-
   Replication package: Do Stack Overflow Answer Edits Occur Beyond Java?
   A Replication on Python and JavaScript
 abstract: >-
-  Data, code, intermediate results and report source for a replication, on Python and
-  JavaScript, of the Java study of Stack Overflow answer edits by Wiratsin et al.
-  (arXiv:2511.05813). Includes the SOTorrent extraction and analysis pipeline, the
-  Levenshtein edit-distance data for 637,923 Python and 793,362 JavaScript code-block
-  revision pairs, the clone-search results for 100 GitHub projects per language, and the
-  LaTeX source of the report.
+  Data, code and intermediate results for a replication, on Python and JavaScript, of the
+  Java study of Stack Overflow answer edits by Wiratsin et al. (arXiv:2511.05813).
+  Includes the SOTorrent extraction and analysis pipeline, the Levenshtein edit-distance
+  data for 637,923 Python and 793,362 JavaScript code-block revision pairs, and the
+  clone-search results for 100 GitHub projects per language. The technical report itself
+  is distributed separately.
 type: dataset
 doi: 10.5281/zenodo.21900949
 url: https://doi.org/10.5281/zenodo.21900949

@@ -10,9 +10,9 @@ DOI: [10.5281/zenodo.21900949](https://doi.org/10.5281/zenodo.21900949)
 
 ---
 
-This package contains the data, code, intermediate results and report source for a
-replication of the Java study of Wiratsin et al. (arXiv:[2511.05813](https://arxiv.org/abs/2511.05813))
-on Python and JavaScript.
+This package contains the data, code and intermediate results behind a replication of the
+Java study of Wiratsin et al. (arXiv:[2511.05813](https://arxiv.org/abs/2511.05813)) on
+Python and JavaScript.
 
 The study asks two questions:
 
@@ -28,12 +28,12 @@ edited answer is near-identical across the three languages (2.78, 2.68, 2.82). S
 medium- to high-popularity projects — 80 / 156 / 977 for Python and 32 / 71 / 353 for
 JavaScript — significantly so for Python, not for JavaScript.
 
-The full report is `replication_study.pdf`.
+The technical report describing the study is distributed separately and is not included
+here; this package holds the material needed to reproduce its results.
 
 ## What is in the package
 
 ```
-replication_study.pdf         The technical report (built PDF)
 README.md                     This file
 CITATION.cff                  Citation metadata
 LICENSE                       MIT, applies to the code
@@ -51,7 +51,7 @@ analysis/                     Analysis code and data
   aggregate_so_gh_clones.py     Stage 5: RQ2 aggregation and statistical tests
   levenshtein_distances_python.csv       637,923 original/latest code-block pairs
   levenshtein_distances_javascript.csv   793,362 pairs
-  python_post_revisions_histogram.pdf    Revision-count histograms (report Figs. 1-2)
+  python_post_revisions_histogram.pdf    Revision-count histograms written by stage 3
   javascript_post_revisions_histogram.pdf
   so-gh_clones/                 RQ2 clone-search output
     {python,javascript}_repos_stars*.txt      the 100 searched projects per language,
@@ -66,33 +66,19 @@ files/                        Answer id lists produced by stage 1
 results/                      Derived results, regenerated when this package was built
   levenshtein_stats.{json,txt}  Stage 4 output
   rq2_summary.{json,txt}        Stage 5 output
-
-technical-report/             Report source, buildable with `make`
-  report.tex, references.bib, Makefile
-  make_figures.py               Stage 6: regenerates the figures
-  figures/                      Figures used by the report
-  rq2_summary.json              Stage 5 output, consumed by make_figures.py
-  notes-paper.md                Notes on the Java manuscript being replicated
-  notes-results-python.md       RQ1 results, Python
-  notes-results-javascript.md   RQ1 results, JavaScript
-  notes-rq2-clones.md           RQ2 clone-search results
 ```
-
-The four `notes-*.md` files are the authority for every number in the report: they were
-written directly from tool output. Where the report and a notes file disagree, trust the
-notes file.
 
 ## Reproducing the results
 
 The directory layout matters — the scripts resolve their inputs relative to their own
 location, so run them from within the unpacked package without moving files.
 
-Stages 1 to 3 need a local SOTorrent database. **Stages 4 to 7 run from the CSVs shipped
-here, so every number and figure in the report can be reproduced without MySQL.**
+Stages 1 to 3 need a local SOTorrent database. **Stages 4 and 5 run from the CSVs shipped
+here, so every number in the report can be reproduced without MySQL.**
 
 ### Prerequisites
 
-For stages 4 to 7 only:
+For stages 4 and 5 only:
 
 ```bash
 python3 -m venv .venv
@@ -103,8 +89,6 @@ For stages 1 to 3 additionally: MySQL with the SOTorrent 2020-12-31 release load
 schema named `sotorrent`, reachable at `127.0.0.1` as user `root` with an empty password.
 Change the connection settings in the configuration cell of each notebook if yours differ.
 SOTorrent is available at <https://empirical-software.engineering/projects/sotorrent/>.
-
-For stage 7: LaTeX with the `IEEEtran` class. TeX Live 2025 has it.
 
 ### 1. Select the accepted, revised answers (database, ~10 min per language)
 
@@ -123,8 +107,7 @@ at least once. This is the predicate the Java study used.
 > built with that flag, which is why it holds 305,768 ids while the unrestricted query
 > returns 346,535. The report quotes 41.25% (unrestricted) as the RQ1 headline for Python,
 > because that is the quantity the Java study reports, and 36.40% as the code-bearing
-> subset. The JavaScript list is unrestricted and needs no such caveat. See
-> `technical-report/notes-results-python.md` section 5.
+> subset. The JavaScript list is unrestricted and needs no such caveat.
 
 ### 2. Extract the code block revisions (database, ~8-11 min per language)
 
@@ -190,27 +173,6 @@ matched answer edits per group, computes per-project maxima and averages, and ru
 Shapiro-Wilk and Kruskal-Wallis tests. `scipy` is needed for the tests; without it the
 counts are still produced and the tests skipped.
 
-### 6. Figures (no database, ~1 min)
-
-```bash
-.venv/bin/python3 technical-report/make_figures.py
-```
-
-Writes the Levenshtein boxplots and the RQ2 bar chart into `technical-report/figures/`,
-invoking the stage 5 aggregation for the latter. The two revision histograms are copied
-from `analysis/` rather than regenerated, because the per-answer revision counts exist only
-in the database.
-
-### 7. Build the report
-
-```bash
-cd technical-report && make
-```
-
-Runs `pdflatex`, `bibtex`, then `pdflatex` twice more. `make figures` reruns stage 6 and
-`make clean` removes the build artefacts. A clean build produces a 12-page PDF with no
-undefined references and no bibtex warnings.
-
 ## Where each number in the report comes from
 
 | Report location | Numbers | Produced by |
@@ -222,8 +184,8 @@ undefined references and no bibtex warnings.
 | Section III-A, III-B, per-answer aggregates | Answers with pairs, blocks per answer, answers with a changed block | Stage 4 |
 | Tables I and II | All RQ2 counts, maxima and averages | Stage 5 |
 | Section III-A, III-B, Kruskal-Wallis and Shapiro-Wilk | H, p, W | Stage 5 |
-| Figures 1 and 2 | Revision histograms | Stage 3, copied by stage 6 |
-| Figures 3 and 4 | Boxplots, RQ2 bar chart | Stage 6 |
+| Figures 1 and 2 | Revision histograms | Stage 3 |
+| Figures 3 and 4 | Boxplots, RQ2 bar chart | Plotted from the stage 4 and 5 data |
 | All Java figures | Everything in the Java column | The original manuscript, not recomputed |
 
 ## Data formats

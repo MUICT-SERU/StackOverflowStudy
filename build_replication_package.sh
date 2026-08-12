@@ -2,10 +2,12 @@
 #
 # Assemble the Zenodo replication package for the Python/JavaScript replication study.
 #
-# Copies the subset of this repository that a reader needs to reproduce the technical
-# report, preserving the relative layout the scripts assume (analysis/, files/,
-# technical-report/), then regenerates the two derived result files and writes a
-# checksum manifest.
+# Copies the subset of this repository that a reader needs to reproduce the numbers in the
+# technical report, preserving the relative layout the scripts assume (analysis/, files/),
+# then regenerates the two derived result files and writes a checksum manifest.
+#
+# The report itself is maintained outside this repository and is not shipped in the
+# package; the package README refers to it rather than including it.
 #
 #   ./build_replication_package.sh            build into replication-package/
 #   ./build_replication_package.sh --zip      also produce replication-package.zip
@@ -21,7 +23,7 @@ MAKE_ZIP=0
 
 echo "==> clearing $OUT"
 rm -rf "$OUT"
-mkdir -p "$OUT"/{analysis/so-gh_clones,files,technical-report/figures,results}
+mkdir -p "$OUT"/{analysis/so-gh_clones,files,results}
 
 echo "==> analysis scripts and notebooks"
 cp "$REPO_ROOT"/analysis/extract_answer_list.py \
@@ -54,30 +56,11 @@ cp "$REPO_ROOT"/files/acceptedWithVersionAnswer_python.txt \
    "$REPO_ROOT"/files/acceptedWithVersionAnswer_javascript.txt \
    "$OUT/files/"
 
-echo "==> report sources"
-cp "$REPO_ROOT"/technical-report/report.tex \
-   "$REPO_ROOT"/technical-report/references.bib \
-   "$REPO_ROOT"/technical-report/Makefile \
-   "$REPO_ROOT"/technical-report/make_figures.py \
-   "$OUT/technical-report/"
-cp "$REPO_ROOT"/technical-report/figures/*.pdf \
-   "$REPO_ROOT"/technical-report/figures/*.png \
-   "$OUT/technical-report/figures/"
-cp "$REPO_ROOT"/technical-report/notes-paper.md \
-   "$REPO_ROOT"/technical-report/notes-results-python.md \
-   "$REPO_ROOT"/technical-report/notes-results-javascript.md \
-   "$REPO_ROOT"/technical-report/notes-rq2-clones.md \
-   "$OUT/technical-report/"
-
-echo "==> built report"
-cp "$REPO_ROOT"/technical-report/report.pdf "$OUT/replication_study.pdf"
-
 echo "==> regenerating derived results"
 "$PY" "$OUT/analysis/levenshtein_stats.py" --json "$OUT/results/levenshtein_stats.json" \
     > "$OUT/results/levenshtein_stats.txt"
 "$PY" "$OUT/analysis/aggregate_so_gh_clones.py" --json "$OUT/results/rq2_summary.json" \
     > "$OUT/results/rq2_summary.txt"
-cp "$OUT/results/rq2_summary.json" "$OUT/technical-report/rq2_summary.json"
 
 echo "==> docs"
 cp "$REPO_ROOT"/replication-package-files/README.md "$OUT/README.md"
