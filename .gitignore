@@ -33,3 +33,7 @@ __pycache__/
 
 .venv
 venv
+
+# Assembled Zenodo replication package; rebuild with ./build_replication_package.sh
+/replication-package/
+/replication-package.zip

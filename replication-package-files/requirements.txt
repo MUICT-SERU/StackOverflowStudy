@@ -1,0 +1,23 @@
+# Python dependencies for the replication package.
+#
+#   python3 -m venv .venv
+#   .venv/bin/pip install -r requirements.txt
+#
+# Versions are those used to produce the results in the report, under Python 3.13.
+# Stage 4 (analysis/levenshtein_stats.py) needs none of these; it is standard library only.
+
+# Stages 1-3, connecting to the local SOTorrent MySQL database.
+mysql-connector-python==9.7.0
+
+# Stage 3, computing the code-block edit distances.
+python-Levenshtein==0.27.3
+
+# Stages 3 and 6, the histograms, boxplots and bar chart.
+matplotlib==3.10.7
+
+# Stage 5, the Shapiro-Wilk and Kruskal-Wallis tests. Optional: without it the RQ2 counts
+# are still produced and the tests are skipped.
+scipy==1.18.0
+
+# Stages 2-3 run as Jupyter notebooks. Skip if you use an editor with its own kernel.
+jupyter

@@ -1,0 +1,93 @@
+cff-version: 1.2.0
+message: >-
+  If you use this replication package, please cite the technical report it
+  accompanies.
+title: >-
+  Replication package: Do Stack Overflow Answer Edits Occur Beyond Java?
+  A Replication on Python and JavaScript
+abstract: >-
+  Data, code, intermediate results and report source for a replication, on Python and
+  JavaScript, of the Java study of Stack Overflow answer edits by Wiratsin et al.
+  (arXiv:2511.05813). Includes the SOTorrent extraction and analysis pipeline, the
+  Levenshtein edit-distance data for 637,923 Python and 793,362 JavaScript code-block
+  revision pairs, the clone-search results for 100 GitHub projects per language, and the
+  LaTeX source of the report.
+type: dataset
+doi: 10.5281/zenodo.21900949
+url: https://doi.org/10.5281/zenodo.21900949
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21900949
+    description: Concept DOI, always resolving to the latest version
+authors:
+  - family-names: Ragkhitwetsagul
+    given-names: Chaiyong
+    affiliation: >-
+      Faculty of Information and Communication Technology, Mahidol University, Thailand
+  - family-names: Wiratsin
+    given-names: In-on
+    affiliation: >-
+      Faculty of Information and Communication Technology, Mahidol University, Thailand
+  - family-names: Paixao
+    given-names: Matheus
+    affiliation: State University of Ceara (UECE), Brazil
+  - family-names: De Sousa
+    given-names: Denis
+    affiliation: State University of Ceara (UECE), Brazil
+  - family-names: Lapvikai
+    given-names: Pongpop
+    affiliation: >-
+      Faculty of Information and Communication Technology, Mahidol University, Thailand
+  - family-names: Haddawy
+    given-names: Peter
+    affiliation: >-
+      Faculty of Information and Communication Technology, Mahidol University, Thailand
+keywords:
+  - Stack Overflow
+  - answer edits
+  - code clones
+  - code recommendation
+  - replication study
+  - SOTorrent
+  - Python
+  - JavaScript
+license: MIT
+references:
+  - type: article
+    title: >-
+      An Empirical Study of Java Code Improvements Based on Stack Overflow Answer Edits
+    year: 2025
+    notes: The study being replicated. arXiv:2511.05813
+    url: https://arxiv.org/abs/2511.05813
+    authors:
+      - family-names: Wiratsin
+        given-names: In-on
+      - family-names: Ragkhitwetsagul
+        given-names: Chaiyong
+      - family-names: Paixao
+        given-names: Matheus
+      - family-names: De Sousa
+        given-names: Denis
+      - family-names: Lapvikai
+        given-names: Pongpop
+      - family-names: Haddawy
+        given-names: Peter
+  - type: conference-paper
+    title: >-
+      SOTorrent: Reconstructing and Analyzing the Evolution of Stack Overflow Posts
+    year: 2018
+    collection-title: >-
+      Proceedings of the 15th International Conference on Mining Software Repositories
+    start: 319
+    end: 330
+    doi: 10.1145/3196398.3196430
+    notes: The dataset the study is built on.
+    authors:
+      - family-names: Baltes
+        given-names: Sebastian
+      - family-names: Dumani
+        given-names: Lorik
+      - family-names: Treude
+        given-names: Christoph
+      - family-names: Diehl
+        given-names: Stephan
