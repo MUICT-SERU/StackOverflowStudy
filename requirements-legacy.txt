@@ -1,0 +1,103 @@
+# Legacy virtualenv pins, recorded 2026-08-12 before deleting env/, analysis/.venv and
+# venv/ to reclaim ~718 MB. This file exists so those environments can be recreated
+# exactly rather than approximately; it is a record, not something to install as a whole.
+#
+# The active environment is .venv/ at the repository root. It is NOT described here --
+# see replication-package-files/requirements.txt for the environment that produced the
+# Python/JavaScript replication results.
+#
+# Versions are taken from each environment's installed dist-info metadata. pip,
+# setuptools and wheel are omitted.
+
+# ---------------------------------------------------------------------------
+# env/  --  Python 3.13.0 (Homebrew)
+#
+# The analysis stack without Jupyter: matplotlib, mysql-connector, Levenshtein,
+# scipy, pandas. Superseded by .venv/, which carries the same stack at newer
+# versions. Recreate with:
+#     python3 -m venv env && env/bin/pip install -r <this section>
+# ---------------------------------------------------------------------------
+contourpy==1.3.3
+cycler==0.12.1
+fonttools==4.60.1
+kiwisolver==1.4.9
+Levenshtein==0.27.1
+matplotlib==3.10.7
+mysql-connector-python==9.7.0
+numpy==2.3.3
+packaging==25.0
+pandas==2.3.3
+pillow==11.3.0
+pyparsing==3.2.5
+python-dateutil==2.9.0.post0
+python-Levenshtein==0.27.1
+pytz==2025.2
+RapidFuzz==3.14.1
+scipy==1.16.2
+six==1.17.0
+tzdata==2025.2
+
+# ---------------------------------------------------------------------------
+# analysis/.venv/  --  Python 3.13.0 (Homebrew)
+#
+# The Jupyter kernel environment the Java-era analysis ran in, and the only
+# environment that carried openpyxl, which analysis/read_excel.ipynb needs to
+# read GH_selection_revise_FIXED_highlight_PRs.xlsx. openpyxl has since been
+# installed into .venv/ so that notebook still runs.
+#
+# If the original Java study's numbers ever need re-verifying at their exact
+# dependency versions, this is the environment to rebuild. Recreate with:
+#     python3 -m venv analysis/.venv
+#     analysis/.venv/bin/pip install -r <this section>
+# ---------------------------------------------------------------------------
+appnope==0.1.4
+asttokens==3.0.0
+comm==0.2.3
+contourpy==1.3.3
+cycler==0.12.1
+debugpy==1.8.16
+decorator==5.2.1
+et_xmlfile==2.0.0
+executing==2.2.0
+fonttools==4.59.2
+ipykernel==6.30.1
+ipython==9.5.0
+ipython_pygments_lexers==1.1.1
+jedi==0.19.2
+jupyter_client==8.6.3
+jupyter_core==5.8.1
+kiwisolver==1.4.9
+matplotlib==3.10.5
+matplotlib-inline==0.1.7
+nest-asyncio==1.6.0
+numpy==2.3.2
+openpyxl==3.1.5
+packaging==25.0
+pandas==2.3.2
+parso==0.8.5
+pexpect==4.9.0
+pillow==11.3.0
+platformdirs==4.4.0
+prompt_toolkit==3.0.52
+psutil==7.0.0
+ptyprocess==0.7.0
+pure_eval==0.2.3
+Pygments==2.19.2
+pyparsing==3.2.3
+python-dateutil==2.9.0.post0
+pytz==2025.2
+pyzmq==27.0.2
+scipy==1.16.1
+six==1.17.0
+stack-data==0.6.3
+tornado==6.5.2
+traitlets==5.14.3
+tzdata==2025.2
+wcwidth==0.2.13
+
+# ---------------------------------------------------------------------------
+# venv/  --  Python 3.9.2 (pyenv)
+#
+# Held pip 20.2.3 and setuptools 49.2.1 only; nothing was ever installed into it.
+# Nothing to record. Recreating it would need pyenv 3.9.2 available again.
+# ---------------------------------------------------------------------------
